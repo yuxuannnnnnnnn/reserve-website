@@ -28,7 +28,7 @@
             font-weight: bold;
         }
         .empty { background-color: #ccc; }
-        .occupied { background-color: #9acd32; }
+        .occupied { background-color: #b5d860; }
         .finished { background-color: #d9534f; color: white; }
         .finished::after { content: "收桌中"; font-size: 12px; }
 
@@ -96,27 +96,10 @@
     </style>
 </head>
 <body>
-    <h2>餐廳桌位管理</h2>
+    <h1>餐廳桌位管理</h1>
     <div class="table-container" id="tables"></div>
 
-    <h3>候位管理</h3>
-    <div class="input-container">
-        <div class="row">
-            <input type="number" id="guestCount" placeholder="人數" min="1">
-        </div>
-        <div class="row">
-            <input type="text" id="guestName" placeholder="姓氏">
-        </div>
-        <div class="name-buttons">
-            <button id="mrButton" onclick="selectTitle('先生')">先生</button>
-            <button id="msButton" onclick="selectTitle('小姐')">小姐</button>
-        </div>
-        <input type="text" id="guestPhone" placeholder="手機">
-        <button onclick="addToWaitlist()">新增候位</button>
-    </div>
-    <ul id="waitlist"></ul>
-
-    <h3>已訂位</h3>
+<h2>已訂位</h2>
     <div class="input-container">
         <div class="row">
             <input type="number" id="reservedCount" placeholder="人數" min="1">
@@ -155,6 +138,25 @@
     </div>
     <ul id="reservedList"></ul>
 
+    <h2>候位管理</h2>
+    <div class="input-container">
+        <div class="row">
+            <input type="number" id="guestCount" placeholder="人數" min="1">
+        </div>
+        <div class="row">
+            <input type="text" id="guestName" placeholder="姓氏">
+        </div>
+        <div class="name-buttons">
+            <button id="mrButton" onclick="selectTitle('先生')">先生</button>
+            <button id="msButton" onclick="selectTitle('小姐')">小姐</button>
+        </div>
+        <input type="text" id="guestPhone" placeholder="手機">
+        <button onclick="addToWaitlist()">新增候位</button>
+    </div>
+    <ul id="waitlist"></ul>
+
+    
+
     <script>
         const tables = [1, 2, 4, 5, 6, 7, 8, 10];
         const tableStatus = {};
@@ -176,7 +178,7 @@
                     const startTime = tableStatus[table].startTime;
                     const endTime = new Date(startTime.getTime() + 90 * 60000);
                     tableDiv.innerHTML += `<div>${formatTime(startTime)} 入座</div>`;
-                    tableDiv.innerHTML += `<div style="color: red;">${formatTime(endTime)} 結束</div>`;
+                    tableDiv.innerHTML += `<div style="color: #e51f1a;">${formatTime(endTime)} 結束</div>`;
                 }
                 tableDiv.onclick = () => toggleTable(table);
                 container.appendChild(tableDiv);
