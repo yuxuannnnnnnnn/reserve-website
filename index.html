@@ -64,13 +64,21 @@
             background-color: #007bff;
             color: white;
         }
-        .waitlist-item {
+         .waitlist-item {
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 10px;
             justify-content: center;
             margin-top: 5px;
+            width: 100%; /* 讓 <li> 佔滿父元素的寬度 */
+            max-width: 500px; /* 可選：設置最大寬度 */
+            margin-left: auto;
+            margin-right: auto;
+            padding: 10px; /* 可選：添加內邊距 */
+            border: 1px solid #ccc; /* 可選：添加邊框以便觀察 */
+            border-radius: 8px; /* 添加圓角 */
+            background-color: #F7F7F7;
         }
         .seat-button {
             padding: 5px 10px;
@@ -86,6 +94,8 @@
             color: white;
             border: none;
             cursor: pointer;
+            margin: 0; /* 移除按鈕的外邊距 */
+            width: auto; /* 讓按鈕根據內容自動調整寬度 */
         }
         .available-tables {
             display: flex;
