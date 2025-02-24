@@ -206,6 +206,7 @@ ul {
     <!-- 訂位 Tab 內容 -->
     <div id="reservedTab" class="tab-content active">
         <h2>已訂位</h2>
+        <ul id="reservedList"></ul>
         <div class="input-container">
             <div class="row">
                 <input type="number" id="reservedCount" placeholder="人數" min="1">
@@ -234,12 +235,13 @@ ul {
             </select>
             <button onclick="addToReservedList()">新增訂位</button>
         </div>
-        <ul id="reservedList"></ul>
+        
     </div>
 
     <!-- 候位 Tab 內容 -->
     <div id="waitingTab" class="tab-content">
         <h3>已候位</h3>
+        <ul id="waitingList"></ul>
         <div class="input-container">
             <div class="row">
                 <input type="number" id="waitingCount" placeholder="人數" min="1">
@@ -254,7 +256,7 @@ ul {
             <input type="tel" id="waitingPhone" placeholder="手機">
             <button onclick="addToWaitingList()">新增候位</button>
         </div>
-        <ul id="waitingList"></ul>
+        
     </div>
 
     <script>
