@@ -22,11 +22,11 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            margin-top: 20px;
+            margin-top: 0px;
         }
         .table {
-            width: 100px;
-            height: 100px;
+            width: 90px;
+            height: 90px;
             margin: 5px;
             display: flex;
             flex-direction: column;
@@ -43,13 +43,13 @@
             top: 5px;
             left: 5px;
             font-size: 12px;
-            color: #666;
+            color: #825400;
         }
         .empty { background-color: #ccc; }
-        .reserved { background-color: #ffeb3b; }
-        .occupied { background-color: #b5d860; }
+        .reserved { background-color: #EFB700; }
+        .occupied { background-color: #04AA6D; color: white; }
         .finished { background-color: #d9534f; color: white; }
-        .finished::after { content: "收桌中"; font-size: 16px; }
+        .finished::after { content: "收桌中"; font-size: 14px; }
 
         .input-container {
             display: flex;
@@ -60,7 +60,7 @@
         }
         input, button, select {
             padding: 10px;
-            font-size: 16px;
+            font-size: 14px;
         }
         .row {
             display: flex;
@@ -80,7 +80,7 @@
             cursor: pointer;
         }
         .name-buttons button.active {
-            background-color: #007bff;
+            background-color: #000000;
             color: white;
         }
 
@@ -108,7 +108,7 @@
         }
         .table-button {
             padding: 5px 10px;
-            background-color: #28a745;
+            background-color: #04AA6D;
             color: white;
             border: none;
             cursor: pointer;
@@ -116,7 +116,7 @@
         }
         .confirm-button {
             padding: 5px 10px;
-            background-color: #17a2b8;
+            background-color: #000000;
             color: white;
             border: none;
             cursor: pointer;
@@ -129,11 +129,11 @@
             cursor: pointer;
         }
         .time-info {
-            font-size: 16px;
+            font-size: 14px;
             margin-top: 5px;
         }
         .before-time {
-            color: #28a745;
+            color: #4286BD;
         }
         .after-time {
             color: #e51f1a;
@@ -157,7 +157,7 @@ ul {
         .tabs {
             display: flex;
             justify-content: center;
-            margin: 20px 0;
+            margin: 20px 0px;
             width: 100%;
             max-width: 500px;
             margin-left: auto;
@@ -165,18 +165,18 @@ ul {
         }
         .tab-button {
             flex: 1;
-            padding: 10px;
+            padding: 6px;
             cursor: pointer;
             border: 1px solid #ccc;
             background-color: #f8f8f8;
             font-size: 18px;
             font-weight: bold;
-            transition: background-color 0.3s;
+            transition: background-color 0.2s;
         }
         .tab-button.active {
-            background-color: #007bff;
+            background-color: #000000;
             color: white;
-            border-color: #007bff;
+            border-color: #000000;
         }
         .tab-button:first-child {
             border-radius: 8px 0 0 8px;
@@ -217,7 +217,7 @@ ul {
                 <button id="mrButtonReserved" onclick="selectTitleReserved('先生')">先生</button>
                 <button id="msButtonReserved" onclick="selectTitleReserved('小姐')">小姐</button>
             </div>
-            <input type="text" id="reservedPhone" placeholder="手機">
+            <input type="tel" id="reservedPhone" placeholder="手機">
             <select id="reservedTime">
                 <option value="11:00">11:00</option>
                 <option value="11:30">11:30</option>
@@ -251,7 +251,7 @@ ul {
                 <button id="mrButtonWaiting" onclick="selectTitleWaiting('先生')">先生</button>
                 <button id="msButtonWaiting" onclick="selectTitleWaiting('小姐')">小姐</button>
             </div>
-            <input type="text" id="waitingPhone" placeholder="手機">
+            <input type="tel" id="waitingPhone" placeholder="手機">
             <button onclick="addToWaitingList()">新增候位</button>
         </div>
         <ul id="waitingList"></ul>
@@ -272,7 +272,7 @@ ul {
         window.addEventListener('beforeunload', function(e) {
             if (dataChanged) {
                 // 舊版本的瀏覽器需要返回值
-                const confirmationMessage = '您有未保存的數據，確定要離開嗎？';
+                const confirmationMessage = '離開會清除所有資料，確定要離開嗎？';
                 e.returnValue = confirmationMessage;
                 return confirmationMessage;
             }
@@ -333,7 +333,7 @@ ul {
                     timeInfo.className = "time-info";
                     timeInfo.innerHTML = 
                         `${formatTime(startTime)} 入座<br>
-                        ${formatTime(endTime)} 結束`
+                        <div style="color: #FFE550;">${formatTime(endTime)} 結束`
                     ;
                     tableDiv.appendChild(timeInfo);
                 }
