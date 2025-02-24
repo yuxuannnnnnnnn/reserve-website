@@ -6,13 +6,13 @@
     <title>餐廳桌位管理</title>
     <style>
         h1 {
-            font-size: 28px; /* 調整 h1 的字體大小 */
+            font-size: 0px; /* 調整 h1 的字體大小 */
         }
         h2 {
-            font-size: 24px; /* 調整 h2 的字體大小 */
+            font-size: 0px; /* 調整 h2 的字體大小 */
         }
         h3 {
-            font-size: 24px; /* 調整 h3 的字體大小 */
+            font-size: 0px; /* 調整 h3 的字體大小 */
         }
         body {
             font-family: Arial, sans-serif;
@@ -152,60 +152,110 @@ ul {
             width: 100%;            /* 佔滿父元素寬度 */
             margin: 10px 0;         /* 上下留一些間距 */
         }
+
+        /* 新增的 Tab 样式 */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .tab-button {
+            flex: 1;
+            padding: 10px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            background-color: #f8f8f8;
+            font-size: 18px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .tab-button.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        .tab-button:first-child {
+            border-radius: 8px 0 0 8px;
+        }
+        .tab-button:last-child {
+            border-radius: 0 8px 8px 0;
+        }
+        .tab-content {
+            display: none;
+            width: 100%;
+        }
+        .tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
     <h1>餐廳桌位管理</h1>
     <div class="table-container" id="tables"></div>
 
-    <h2>已訂位</h2>
-    <div class="input-container">
-        <div class="row">
-            <input type="number" id="reservedCount" placeholder="人數" min="1">
-        </div>
-        <div class="row">
-            <input type="text" id="reservedName" placeholder="姓氏">
-        </div>
-        <div class="name-buttons">
-            <button id="mrButtonReserved" onclick="selectTitleReserved('先生')">先生</button>
-            <button id="msButtonReserved" onclick="selectTitleReserved('小姐')">小姐</button>
-        </div>
-        <input type="text" id="reservedPhone" placeholder="手機">
-        <select id="reservedTime">
-            <option value="11:00">11:00</option>
-            <option value="11:30">11:30</option>
-            <option value="12:00">12:00</option>
-            <option value="12:30">12:30</option>
-            <option value="13:00">13:00</option>
-            <option value="17:00">17:00</option>
-            <option value="17:30">17:30</option>
-            <option value="18:00">18:00</option>
-            <option value="18:30">18:30</option>
-            <option value="19:00">19:00</option>
-            <option value="19:30">19:30</option>
-            <option value="20:00">20:00</option>
-        </select>
-        <button onclick="addToReservedList()">新增訂位</button>
+    <!-- Tab 切換按鈕 -->
+    <div class="tabs">
+        <div class="tab-button active" onclick="openTab('reservedTab')">訂位</div>
+        <div class="tab-button" onclick="openTab('waitingTab')">候位</div>
     </div>
-    <ul id="reservedList"></ul>
 
-    <!-- 候位管理區域 -->
-    <h3>已候位</h3>
-    <div class="input-container">
-        <div class="row">
-            <input type="number" id="waitingCount" placeholder="人數" min="1">
+    <!-- 訂位 Tab 內容 -->
+    <div id="reservedTab" class="tab-content active">
+        <h2>已訂位</h2>
+        <div class="input-container">
+            <div class="row">
+                <input type="number" id="reservedCount" placeholder="人數" min="1">
+            </div>
+            <div class="row">
+                <input type="text" id="reservedName" placeholder="姓氏">
+            </div>
+            <div class="name-buttons">
+                <button id="mrButtonReserved" onclick="selectTitleReserved('先生')">先生</button>
+                <button id="msButtonReserved" onclick="selectTitleReserved('小姐')">小姐</button>
+            </div>
+            <input type="text" id="reservedPhone" placeholder="手機">
+            <select id="reservedTime">
+                <option value="11:00">11:00</option>
+                <option value="11:30">11:30</option>
+                <option value="12:00">12:00</option>
+                <option value="12:30">12:30</option>
+                <option value="13:00">13:00</option>
+                <option value="17:00">17:00</option>
+                <option value="17:30">17:30</option>
+                <option value="18:00">18:00</option>
+                <option value="18:30">18:30</option>
+                <option value="19:00">19:00</option>
+                <option value="19:30">19:30</option>
+                <option value="20:00">20:00</option>
+            </select>
+            <button onclick="addToReservedList()">新增訂位</button>
         </div>
-        <div class="row">
-            <input type="text" id="waitingName" placeholder="姓氏">
-        </div>
-        <div class="name-buttons">
-            <button id="mrButtonWaiting" onclick="selectTitleWaiting('先生')">先生</button>
-            <button id="msButtonWaiting" onclick="selectTitleWaiting('小姐')">小姐</button>
-        </div>
-        <input type="text" id="waitingPhone" placeholder="手機">
-        <button onclick="addToWaitingList()">新增候位</button>
+        <ul id="reservedList"></ul>
     </div>
-    <ul id="waitingList"></ul>
+
+    <!-- 候位 Tab 內容 -->
+    <div id="waitingTab" class="tab-content">
+        <h3>已候位</h3>
+        <div class="input-container">
+            <div class="row">
+                <input type="number" id="waitingCount" placeholder="人數" min="1">
+            </div>
+            <div class="row">
+                <input type="text" id="waitingName" placeholder="姓氏">
+            </div>
+            <div class="name-buttons">
+                <button id="mrButtonWaiting" onclick="selectTitleWaiting('先生')">先生</button>
+                <button id="msButtonWaiting" onclick="selectTitleWaiting('小姐')">小姐</button>
+            </div>
+            <input type="text" id="waitingPhone" placeholder="手機">
+            <button onclick="addToWaitingList()">新增候位</button>
+        </div>
+        <ul id="waitingList"></ul>
+    </div>
 
     <script>
         const tables = [1, 2, 4, 5, 6, 7, 8, 10];
@@ -216,6 +266,45 @@ ul {
         let waitingCounter = 1;
         let selectedTitleReserved = "先生";
         let selectedTitleWaiting = "先生";
+        let dataChanged = false; // 用於追踪數據是否有變化
+
+        // 添加頁面離開確認
+        window.addEventListener('beforeunload', function(e) {
+            if (dataChanged) {
+                // 舊版本的瀏覽器需要返回值
+                const confirmationMessage = '您有未保存的數據，確定要離開嗎？';
+                e.returnValue = confirmationMessage;
+                return confirmationMessage;
+            }
+        });
+
+        // 設置數據變化標記的函數
+        function markDataChanged() {
+            dataChanged = true;
+        }
+
+        // Tab 切換功能
+        function openTab(tabName) {
+            const tabContents = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove("active");
+            }
+
+            const tabButtons = document.getElementsByClassName("tab-button");
+            for (let i = 0; i < tabButtons.length; i++) {
+                tabButtons[i].classList.remove("active");
+            }
+
+            document.getElementById(tabName).classList.add("active");
+            
+            // 找到相應的按鈕並激活它
+            const buttons = document.getElementsByClassName("tab-button");
+            for (let i = 0; i < buttons.length; i++) {
+                if (buttons[i].getAttribute("onclick").includes(tabName)) {
+                    buttons[i].classList.add("active");
+                }
+            }
+        }
 
         function renderTables() {
             const container = document.getElementById("tables");
@@ -285,6 +374,7 @@ ul {
             } else {
                 tableStatus[table] = { status: "empty" };
             }
+            markDataChanged(); // 標記數據已變化
             renderTables();
             renderReservedList();
             renderWaitingList();
@@ -345,6 +435,7 @@ ul {
             };
             
             reservedList.push(reservation);
+            markDataChanged(); // 標記數據已變化
             clearReservedInputs();
             renderReservedList();
         }
@@ -366,6 +457,7 @@ ul {
             };
             
             waitingList.push(waiting);
+            markDataChanged(); // 標記數據已變化
             clearWaitingInputs();
             renderWaitingList();
         }
@@ -465,12 +557,14 @@ ul {
                 reservedTime: reservedTime
             };
             reservedList[index].assignedTable = table;
+            markDataChanged(); // 標記數據已變化
             renderTables();
             renderReservedList();
         }
 
         function assignWaitingTable(table, index) {
             waitingList[index].assignedTable = table;
+            markDataChanged(); // 標記數據已變化
             renderWaitingList();
         }
 
@@ -480,6 +574,7 @@ ul {
                 startTime: new Date()
             };
             reservedList.splice(index, 1);
+            markDataChanged(); // 標記數據已變化
             renderTables();
             renderReservedList();
         }
@@ -490,6 +585,7 @@ ul {
                 startTime: new Date()
             };
             waitingList.splice(index, 1);
+            markDataChanged(); // 標記數據已變化
             renderTables();
             renderWaitingList();
         }
@@ -500,6 +596,7 @@ ul {
                 delete tableStatus[canceledReservation.assignedTable];
             }
             reservedList.splice(index, 1);
+            markDataChanged(); // 標記數據已變化
             renderReservedList();
             renderTables();
         }
@@ -510,6 +607,7 @@ ul {
                 delete tableStatus[canceledWaiting.assignedTable];
             }
             waitingList.splice(index, 1);
+            markDataChanged(); // 標記數據已變化
             renderWaitingList();
             renderTables();
         }
@@ -528,9 +626,18 @@ ul {
         }
 
         // 初始化頁面
-        renderTables();
-        renderReservedList();
-        renderWaitingList();
+        window.onload = function() {
+            // 设置先生按钮为初始选中状态
+            document.getElementById("mrButtonReserved").classList.add("active");
+            document.getElementById("mrButtonWaiting").classList.add("active");
+            
+            renderTables();
+            renderReservedList();
+            renderWaitingList();
+            
+            // 初始化時將數據變化標記設為 false
+            dataChanged = false;
+        };
     </script>
 </body>
 </html>
