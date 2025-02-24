@@ -47,7 +47,7 @@
         }
         .empty { background-color: #ccc; }
         .reserved { background-color: #EFB700; }
-        .occupied { background-color: #04AA6D; color: white; }
+        .occupied { background-color: #04AA6D; color: black; }
         .finished { background-color: #d9534f; color: white; }
         .finished::after { content: "收桌中"; font-size: 14px; }
 
@@ -332,8 +332,8 @@ ul {
                     const timeInfo = document.createElement("div");
                     timeInfo.className = "time-info";
                     timeInfo.innerHTML = 
-                        `${formatTime(startTime)} 入座<br>
-                        <div style="color: #FFE550;">${formatTime(endTime)} 結束`
+                        `<div style="color: #005435;">${formatTime(startTime)} 入座<br>
+                        <div style="color: #FFFFFF;">${formatTime(endTime)} 結束`
                     ;
                     tableDiv.appendChild(timeInfo);
                 }
