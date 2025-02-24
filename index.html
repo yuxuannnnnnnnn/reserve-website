@@ -3,8 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>餐廳桌位管理</title>
+    <title>餐廳桌位管理 </title>
     <style>
+        h1 {
+        font-size: 28px; /* 調整 h1 的字體大小 */
+    }
+    h2 {
+        font-size: 24px; /* 調整 h2 的字體大小 */
+    }
+    h3 {
+        font-size: 24px; /* 調整 h3 的字體大小 */
+    }
         body {
             font-family: Arial, sans-serif;
             text-align: center;
@@ -16,8 +25,8 @@
             margin-top: 20px;
         }
         .table {
-            width: 90px;
-            height: 90px;
+            width: 120px;
+            height: 120px;
             margin: 5px;
             display: flex;
             flex-direction: column;
@@ -26,11 +35,21 @@
             border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
+            position: relative;
+            padding: 5px;
+        }
+        .reservation-id {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            font-size: 12px;
+            color: #666;
         }
         .empty { background-color: #ccc; }
+        .reserved { background-color: #ffeb3b; }
         .occupied { background-color: #b5d860; }
         .finished { background-color: #d9534f; color: white; }
-        .finished::after { content: "收桌中"; font-size: 12px; }
+        .finished::after { content: "收桌中"; font-size: 16px; }
 
         .input-container {
             display: flex;
@@ -39,7 +58,7 @@
             gap: 10px;
             margin-top: 20px;
         }
-        input, button {
+        input, button, select {
             padding: 10px;
             font-size: 16px;
         }
@@ -64,29 +83,39 @@
             background-color: #007bff;
             color: white;
         }
-         .waitlist-item {
+        .waitlist-item {
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 10px;
-            justify-content: center;
-            margin-top: 5px;
-            width: 100%; /* 讓 <li> 佔滿父元素的寬度 */
-            max-width: 500px; /* 可選：設置最大寬度 */
-            margin-left: auto;
-            margin-right: auto;
-            padding: 10px; /* 可選：添加內邊距 */
-            border: 1px solid #ccc; /* 可選：添加邊框以便觀察 */
-            border-radius: 8px; /* 添加圓角 */
+            margin: 10px auto;
+            max-width: 500px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
             background-color: #F7F7F7;
         }
-        .seat-button {
+        .button-container {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .table-button {
             padding: 5px 10px;
             background-color: #28a745;
             color: white;
             border: none;
             cursor: pointer;
-            margin-top: 5px;
+            margin: 2px;
+        }
+        .confirm-button {
+            padding: 5px 10px;
+            background-color: #17a2b8;
+            color: white;
+            border: none;
+            cursor: pointer;
+            
         }
         .cancel-button {
             padding: 5px 10px;
@@ -94,14 +123,16 @@
             color: white;
             border: none;
             cursor: pointer;
-            margin: 0; /* 移除按鈕的外邊距 */
-            width: auto; /* 讓按鈕根據內容自動調整寬度 */
         }
-        .available-tables {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
+        .time-info {
+            font-size: 16px;
+            margin-top: 5px;
+        }
+        .before-time {
+            color: #28a745;
+        }
+        .after-time {
+            color: #e51f1a;
         }
     </style>
 </head>
@@ -109,7 +140,7 @@
     <h1>餐廳桌位管理</h1>
     <div class="table-container" id="tables"></div>
 
-<h2>已訂位</h2>
+    <h2>已訂位</h2>
     <div class="input-container">
         <div class="row">
             <input type="number" id="reservedCount" placeholder="人數" min="1">
@@ -128,13 +159,7 @@
             <option value="12:00">12:00</option>
             <option value="12:30">12:30</option>
             <option value="13:00">13:00</option>
-            <option value="13:30">13:30</option>
-            <option value="14:00">14:00</option>
-            <option value="14:30">14:30</option>
-            <option value="15:00">15:00</option>
-            <option value="15:30">15:30</option>
-            <option value="16:00">16:00</option>
-            <option value="16:30">16:30</option>
+        
             <option value="17:00">17:00</option>
             <option value="17:30">17:30</option>
             <option value="18:00">18:00</option>
@@ -142,38 +167,38 @@
             <option value="19:00">19:00</option>
             <option value="19:30">19:30</option>
             <option value="20:00">20:00</option>
-            <option value="20:30">20:30</option>
         </select>
         <button onclick="addToReservedList()">新增訂位</button>
     </div>
     <ul id="reservedList"></ul>
 
-    <h2>候位管理</h2>
+    <!-- 新增候位管理區域 -->
+    <h3>已候位</h3>
     <div class="input-container">
         <div class="row">
-            <input type="number" id="guestCount" placeholder="人數" min="1">
+            <input type="number" id="waitingCount" placeholder="人數" min="1">
         </div>
         <div class="row">
-            <input type="text" id="guestName" placeholder="姓氏">
+            <input type="text" id="waitingName" placeholder="姓氏">
         </div>
         <div class="name-buttons">
-            <button id="mrButton" onclick="selectTitle('先生')">先生</button>
-            <button id="msButton" onclick="selectTitle('小姐')">小姐</button>
+            <button id="mrButtonWaiting" onclick="selectTitleWaiting('先生')">先生</button>
+            <button id="msButtonWaiting" onclick="selectTitleWaiting('小姐')">小姐</button>
         </div>
-        <input type="text" id="guestPhone" placeholder="手機">
-        <button onclick="addToWaitlist()">新增候位</button>
+        <input type="text" id="waitingPhone" placeholder="手機">
+        <button onclick="addToWaitingList()">新增候位</button>
     </div>
-    <ul id="waitlist"></ul>
-
-    
+    <ul id="waitingList"></ul>
 
     <script>
         const tables = [1, 2, 4, 5, 6, 7, 8, 10];
         const tableStatus = {};
-        let waitlist = [];
         let reservedList = [];
-        let selectedTitle = "先生";
+        let waitingList = [];
+        let reservationCounter = 1;
+        let waitingCounter = 1;
         let selectedTitleReserved = "先生";
+        let selectedTitleWaiting = "先生";
 
         function renderTables() {
             const container = document.getElementById("tables");
@@ -183,39 +208,93 @@
                 const status = tableStatus[table]?.status || "empty";
                 const tableDiv = document.createElement("div");
                 tableDiv.className = `table ${status}`;
-                tableDiv.innerHTML = `<div>A${table}</div>`;
-                if (status === "occupied") {
+                
+                if (tableStatus[table]?.reservationId) {
+                    const reservationId = document.createElement("div");
+                    reservationId.className = "reservation-id";
+                    reservationId.textContent = `訂${tableStatus[table].reservationId}`;
+                    tableDiv.appendChild(reservationId);
+                }
+
+                const tableNumber = document.createElement("div");
+                tableNumber.textContent = `A${table}`;
+                tableDiv.appendChild(tableNumber);
+
+                if (status === "occupied" && tableStatus[table].startTime) {
                     const startTime = tableStatus[table].startTime;
                     const endTime = new Date(startTime.getTime() + 90 * 60000);
-                    tableDiv.innerHTML += `<div>${formatTime(startTime)} 入座</div>`;
-                    tableDiv.innerHTML += `<div style="color: #e51f1a;">${formatTime(endTime)} 結束</div>`;
+                    const timeInfo = document.createElement("div");
+                    timeInfo.className = "time-info";
+                    timeInfo.innerHTML = 
+                        `${formatTime(startTime)} 入座<br>
+                        ${formatTime(endTime)} 結束`
+                    ;
+                    tableDiv.appendChild(timeInfo);
                 }
+
+                if (status === "reserved" && tableStatus[table]?.reservedTime) {
+                    const timeInfo = document.createElement("div");
+                    timeInfo.className = "time-info";
+                    
+                    const reservedTime = tableStatus[table].reservedTime;
+                    const beforeTime = getTimeBeforeReservation(reservedTime);
+                    const afterTime = getTimeAfterReservation(reservedTime);
+                    
+                    timeInfo.innerHTML = 
+                        `<div class="before-time">${beforeTime} 前可接</div>
+                        <div>${reservedTime}</div>
+                        <div class="after-time">${afterTime} 後可接</div>`
+                    ;
+                    tableDiv.appendChild(timeInfo);
+                }
+
                 tableDiv.onclick = () => toggleTable(table);
                 container.appendChild(tableDiv);
             });
         }
 
         function toggleTable(table) {
+            if (tableStatus[table]?.status === "reserved") {
+                return;
+            }
+            
             if (!tableStatus[table] || tableStatus[table].status === "empty") {
-                tableStatus[table] = { status: "occupied", startTime: new Date() };
+                tableStatus[table] = { 
+                    status: "occupied", 
+                    startTime: new Date() 
+                };
             } else if (tableStatus[table].status === "occupied") {
-                tableStatus[table] = { status: "finished", startTime: null };
+                tableStatus[table] = { status: "finished" };
             } else {
-                tableStatus[table] = { status: "empty", startTime: null };
+                tableStatus[table] = { status: "empty" };
             }
             renderTables();
-            renderWaitlist();
             renderReservedList();
+            renderWaitingList();
         }
 
         function formatTime(date) {
-            return date.toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit", hour12: false });
+            return date.toLocaleTimeString("zh-TW", { 
+                hour: "2-digit", 
+                minute: "2-digit", 
+                hour12: false 
+            });
         }
 
-        function selectTitle(title) {
-            selectedTitle = title;
-            document.getElementById("mrButton").classList.toggle("active", title === "先生");
-            document.getElementById("msButton").classList.toggle("active", title === "小姐");
+        function getTimeBeforeReservation(time) {
+            const [hours, minutes] = time.split(':').map(Number);
+            const date = new Date();
+            date.setHours(hours);
+            date.setMinutes(minutes - 90);
+            return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+        }
+
+        function getTimeAfterReservation(time) {
+            const [hours, minutes] = time.split(':').map(Number);
+            const date = new Date();
+            date.setHours(hours);
+            date.setMinutes(minutes + 90);
+            return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
         }
 
         function selectTitleReserved(title) {
@@ -224,14 +303,10 @@
             document.getElementById("msButtonReserved").classList.toggle("active", title === "小姐");
         }
 
-        function addToWaitlist() {
-            const count = document.getElementById("guestCount").value;
-            const name = document.getElementById("guestName").value;
-            const phone = document.getElementById("guestPhone").value;
-            if (!count || !name || !phone) return;
-            waitlist.push({ count, name, title: selectedTitle, phone, tableSelected: false });
-            clearInputs();
-            renderWaitlist();
+        function selectTitleWaiting(title) {
+            selectedTitleWaiting = title;
+            document.getElementById("mrButtonWaiting").classList.toggle("active", title === "先生");
+            document.getElementById("msButtonWaiting").classList.toggle("active", title === "小姐");
         }
 
         function addToReservedList() {
@@ -239,134 +314,197 @@
             const name = document.getElementById("reservedName").value;
             const phone = document.getElementById("reservedPhone").value;
             const reservedTime = document.getElementById("reservedTime").value;
+            
             if (!count || !name || !phone || !reservedTime) return;
-            reservedList.push({ count, name, title: selectedTitleReserved, phone, reservedTime, tableSelected: false });
+            
+            const reservation = {
+                id: reservationCounter++,
+                count,
+                name,
+                title: selectedTitleReserved,
+                phone,
+                reservedTime,
+                assignedTable: null
+            };
+            
+            reservedList.push(reservation);
             clearReservedInputs();
             renderReservedList();
         }
 
-        function renderWaitlist() {
-    const list = document.getElementById("waitlist");
-    list.innerHTML = "";
-    waitlist.forEach((guest, index) => {
-        const li = document.createElement("li");
-        li.className = "waitlist-item";
-        li.innerHTML = `${guest.count}位 - ${guest.title} ${guest.name} - ${guest.phone}`;
-        const cancelButton = document.createElement("button");
-        cancelButton.className = "cancel-button";
-        cancelButton.textContent = "取消候位";
-        cancelButton.onclick = () => cancelOrder(index);
-        li.appendChild(cancelButton);
-
-        if (!guest.tableSelected) {
-            const availableTables = tables.filter(table => 
-                (!tableStatus[table] || tableStatus[table].status === "empty")
-            );
-            if (availableTables.length > 0) {
-                const availableTablesDiv = document.createElement("div");
-                availableTablesDiv.className = "available-tables";
-                availableTables.forEach(table => {
-                    const seatButton = document.createElement("button");
-                    seatButton.className = "seat-button";
-                    seatButton.textContent = `A${table}`;
-                    seatButton.onclick = () => assignTableToGuest(index, table);
-                    availableTablesDiv.appendChild(seatButton);
-                });
-                li.appendChild(availableTablesDiv);
-            } else {
-                li.innerHTML += `<div>無可用桌位</div>`;
-            }
+        function addToWaitingList() {
+            const count = document.getElementById("waitingCount").value;
+            const name = document.getElementById("waitingName").value;
+            const phone = document.getElementById("waitingPhone").value;
+            
+            if (!count || !name || !phone) return;
+            
+            const waiting = {
+                id: waitingCounter++,
+                count,
+                name,
+                title: selectedTitleWaiting,
+                phone,
+                assignedTable: null
+            };
+            
+            waitingList.push(waiting);
+            clearWaitingInputs();
+            renderWaitingList();
         }
-        list.appendChild(li);
-    });
-}
-
 
         function renderReservedList() {
-    const list = document.getElementById("reservedList");
-    list.innerHTML = "";
-    reservedList.forEach((guest, index) => {
-        const li = document.createElement("li");
-        li.className = "waitlist-item";
-        li.innerHTML = `${guest.count}位 - ${guest.title} ${guest.name} - ${guest.phone} - 訂位時間 ${guest.reservedTime}`;
-        const cancelButton = document.createElement("button");
-        cancelButton.className = "cancel-button";
-        cancelButton.textContent = "取消訂位";
-        cancelButton.onclick = () => cancelReservedOrder(index);
-        li.appendChild(cancelButton);
+            const list = document.getElementById("reservedList");
+            list.innerHTML = "";
+            
+            reservedList.forEach((guest, index) => {
+                const li = document.createElement("li");
+                li.className = "waitlist-item";
+                li.innerHTML = `訂${guest.id} - ${guest.count}位 - ${guest.title} ${guest.name} - ${guest.phone} - 訂位時間 ${guest.reservedTime}`;
+                
+                const buttonContainer = document.createElement("div");
+                buttonContainer.className = "button-container";
 
-        if (!guest.tableSelected) {
-            const availableTables = tables.filter(table => 
-                (!tableStatus[table] || tableStatus[table].status === "empty")
-            );
-            if (availableTables.length > 0) {
-                const availableTablesDiv = document.createElement("div");
-                availableTablesDiv.className = "available-tables";
-                availableTables.forEach(table => {
-                    const seatButton = document.createElement("button");
-                    seatButton.className = "seat-button";
-                    seatButton.textContent = `A${table}`;
-                    seatButton.onclick = () => assignTableToReservedGuest(index, table);
-                    availableTablesDiv.appendChild(seatButton);
-                });
-                li.appendChild(availableTablesDiv);
-            } else {
-                li.innerHTML += `<div>無可用桌位</div>`;
-            }
-        }
-        list.appendChild(li);
-    });
-}
+                if (!guest.assignedTable) {
+                    tables.forEach(table => {
+                        const button = document.createElement("button");
+                        button.className = "table-button";
+                        button.textContent = `A${table}`;
+                        button.onclick = () => assignTable(guest.id, table, guest.reservedTime, index);
+                        buttonContainer.appendChild(button);
+                    });
+                } else {
+                    const confirmButton = document.createElement("button");
+                    confirmButton.className = "confirm-button";
+                    confirmButton.textContent = `確認入座 A${guest.assignedTable}`;
+                    confirmButton.onclick = () => confirmSeating(guest.assignedTable, index);
+                    buttonContainer.appendChild(confirmButton);
+                }
 
+                const cancelButton = document.createElement("button");
+                cancelButton.className = "cancel-button";
+                cancelButton.textContent = "取消訂位";
+                cancelButton.onclick = () => cancelReservedOrder(index);
+                buttonContainer.appendChild(cancelButton);
 
-        // 更新桌位狀態並分配給候位客人
-function assignTableToGuest(guestIndex, table) {
-    waitlist[guestIndex].tableSelected = true;  // 標記已分配桌位
-    tableStatus[table] = { status: "occupied", startTime: new Date() };  // 設置桌位為已占用
-    waitlist.splice(guestIndex, 1);  // 移除已分配桌位的候位客人
-    renderTables();  // 更新桌位顯示
-    renderWaitlist();  // 更新候位顯示
-    renderReservedList();  // 更新訂位顯示
-}
-
-// 更新桌位狀態並分配給訂位客人
-function assignTableToReservedGuest(guestIndex, table) {
-    reservedList[guestIndex].tableSelected = true;  // 標記已分配桌位
-    tableStatus[table] = { status: "occupied", startTime: new Date() };  // 設置桌位為已占用
-    reservedList.splice(guestIndex, 1);  // 移除已分配桌位的訂位客人
-    renderTables();  // 更新桌位顯示
-    renderWaitlist();  // 更新候位顯示
-    renderReservedList();  // 更新訂位顯示
-}
-
-
-
-        function cancelOrder(index) {
-            waitlist.splice(index, 1);
-            renderWaitlist();
+                li.appendChild(buttonContainer);
+                list.appendChild(li);
+            });
         }
 
-        function cancelReservedOrder(index) {
-            reservedList.splice(index, 1);
+        function renderWaitingList() {
+            const list = document.getElementById("waitingList");
+            list.innerHTML = "";
+            
+            waitingList.forEach((guest, index) => {
+                const li = document.createElement("li");
+                li.className = "waitlist-item";
+                li.innerHTML = `候${guest.id} - ${guest.count}位 - ${guest.title} ${guest.name} - ${guest.phone}`;
+                
+                const buttonContainer = document.createElement("div");
+                buttonContainer.className = "button-container";
+
+                if (!guest.assignedTable) {
+                    tables.forEach(table => {
+                        const button = document.createElement("button");
+                        button.className = "table-button";
+                        button.textContent = `A${table}`;
+                        button.onclick = () => assignWaitingTable(table, index);
+                        buttonContainer.appendChild(button);
+                    });
+                } else {
+                    li.innerHTML += ` - A${guest.assignedTable}`;
+                    const confirmButton = document.createElement("button");
+                    confirmButton.className = "confirm-button";
+                    confirmButton.textContent = "確認入座";
+                    confirmButton.onclick = () => confirmWaitingSeating(guest.assignedTable, index);
+                    buttonContainer.appendChild(confirmButton);
+                }
+
+                const cancelButton = document.createElement("button");
+                cancelButton.className = "cancel-button";
+                cancelButton.textContent = "取消候位";
+                cancelButton.onclick = () => cancelWaitingOrder(index);
+                buttonContainer.appendChild(cancelButton);
+
+                li.appendChild(buttonContainer);
+                list.appendChild(li);
+            });
+        }
+
+        function assignTable(reservationId, table, reservedTime, index) {
+            tableStatus[table] = {
+                status: "reserved",
+                reservationId: reservationId,
+                reservedTime: reservedTime
+            };
+            reservedList[index].assignedTable = table;
+            renderTables();
             renderReservedList();
         }
 
-        function clearInputs() {
-            document.getElementById("guestCount").value = "";
-            document.getElementById("guestName").value = "";
-            document.getElementById("guestPhone").value = "";
+        function assignWaitingTable(table, index) {
+            waitingList[index].assignedTable = table;
+            renderWaitingList();
+        }
+
+        function confirmSeating(table, index) {
+            tableStatus[table] = {
+                status: "occupied",
+                startTime: new Date()
+            };
+            reservedList.splice(index, 1);
+            renderTables();
+            renderReservedList();
+        }
+
+        function confirmWaitingSeating(table, index) {
+            tableStatus[table] = {
+                status: "occupied",
+                startTime: new Date()
+            };
+            waitingList.splice(index, 1);
+            renderTables();
+            renderWaitingList();
+        }
+
+        function cancelReservedOrder(index) {
+            const canceledReservation = reservedList[index];
+            if (canceledReservation.assignedTable) {
+                delete tableStatus[canceledReservation.assignedTable];
+            }
+            reservedList.splice(index, 1);
+            renderReservedList();
+            renderTables();
+        }
+
+        function cancelWaitingOrder(index) {
+            const canceledWaiting = waitingList[index];
+            if (canceledWaiting.assignedTable) {
+                delete tableStatus[canceledWaiting.assignedTable];
+            }
+            waitingList.splice(index, 1);
+            renderWaitingList();
+            renderTables();
         }
 
         function clearReservedInputs() {
             document.getElementById("reservedCount").value = "";
             document.getElementById("reservedName").value = "";
             document.getElementById("reservedPhone").value = "";
-            document.getElementById("reservedTime").value = "";
+            document.getElementById("reservedTime").value = "11:00";
         }
 
+        function clearWaitingInputs() {
+            document.getElementById("waitingCount").value = "";
+            document.getElementById("waitingName").value = "";
+            document.getElementById("waitingPhone").value = "";
+        }
+
+        // 初始化頁面
         renderTables();
-        renderWaitlist();
         renderReservedList();
+        renderWaitingList();
     </script>
 </body>
 </html>
