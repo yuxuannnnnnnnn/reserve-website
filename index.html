@@ -85,19 +85,16 @@
         }
         .waitlist-item {
             display: flex;
-            justify-content: center;
             flex-direction: column;
-            align-self: center;
+            align-items: center;
             gap: 10px;
             margin-top: 10px;
-            margin-left: -28px;
-            width: 100%;
+            margin-left: -30px;
             max-width: 500px;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 8px;
             background-color: #F7F7F7;
-            text-align: center; /* 讓內部文字與 inline 元素置中 */
         }
         .button-container {
             display: flex;
@@ -156,7 +153,7 @@
             <button id="mrButtonReserved" onclick="selectTitleReserved('先生')">先生</button>
             <button id="msButtonReserved" onclick="selectTitleReserved('小姐')">小姐</button>
         </div>
-        <input type="tel" id="waitingPhone" placeholder="手機">
+        <input type="tel" id="reservedPhone" placeholder="手機">
         <select id="reservedTime">
             <option value="11:00">11:00</option>
             <option value="11:30">11:30</option>
