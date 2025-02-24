@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>餐廳桌位管理 </title>
+    <title>餐廳桌位管理</title>
     <style>
         h1 {
-        font-size: 28px; /* 調整 h1 的字體大小 */
-    }
-    h2 {
-        font-size: 24px; /* 調整 h2 的字體大小 */
-    }
-    h3 {
-        font-size: 24px; /* 調整 h3 的字體大小 */
-    }
+            font-size: 28px; /* 調整 h1 的字體大小 */
+        }
+        h2 {
+            font-size: 24px; /* 調整 h2 的字體大小 */
+        }
+        h3 {
+            font-size: 24px; /* 調整 h3 的字體大小 */
+        }
         body {
             font-family: Arial, sans-serif;
             text-align: center;
@@ -83,24 +83,28 @@
             background-color: #007bff;
             color: white;
         }
+
         .waitlist-item {
             display: flex;
             flex-direction: column;
+            justify-content: center;
             align-items: center;
             gap: 10px;
-            margin-top: 10px;
-            margin-left: -30px;
+            width: 100%;
             max-width: 500px;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 8px;
             background-color: #F7F7F7;
+            text-align: center;
+            box-sizing: border-box;
         }
         .button-container {
             display: flex;
             gap: 5px;
             flex-wrap: wrap;
             justify-content: center;
+            width: 100%;
         }
         .table-button {
             padding: 5px 10px;
@@ -116,7 +120,6 @@
             color: white;
             border: none;
             cursor: pointer;
-            
         }
         .cancel-button {
             padding: 5px 10px;
@@ -134,6 +137,20 @@
         }
         .after-time {
             color: #e51f1a;
+        }
+ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+}
+        /* 父級容器樣式 */
+        .waitlist-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;     /* 垂直置中 */
+            width: 100%;            /* 佔滿父元素寬度 */
+            margin: 10px 0;         /* 上下留一些間距 */
         }
     </style>
 </head>
@@ -153,14 +170,13 @@
             <button id="mrButtonReserved" onclick="selectTitleReserved('先生')">先生</button>
             <button id="msButtonReserved" onclick="selectTitleReserved('小姐')">小姐</button>
         </div>
-        <input type="tel" id="reservedPhone" placeholder="手機">
+        <input type="text" id="reservedPhone" placeholder="手機">
         <select id="reservedTime">
             <option value="11:00">11:00</option>
             <option value="11:30">11:30</option>
             <option value="12:00">12:00</option>
             <option value="12:30">12:30</option>
             <option value="13:00">13:00</option>
-        
             <option value="17:00">17:00</option>
             <option value="17:30">17:30</option>
             <option value="18:00">18:00</option>
@@ -173,7 +189,7 @@
     </div>
     <ul id="reservedList"></ul>
 
-    <!-- 新增候位管理區域 -->
+    <!-- 候位管理區域 -->
     <h3>已候位</h3>
     <div class="input-container">
         <div class="row">
@@ -186,7 +202,7 @@
             <button id="mrButtonWaiting" onclick="selectTitleWaiting('先生')">先生</button>
             <button id="msButtonWaiting" onclick="selectTitleWaiting('小姐')">小姐</button>
         </div>
-        <input type="tel" id="waitingPhone" placeholder="手機">
+        <input type="text" id="waitingPhone" placeholder="手機">
         <button onclick="addToWaitingList()">新增候位</button>
     </div>
     <ul id="waitingList"></ul>
@@ -359,6 +375,10 @@
             list.innerHTML = "";
             
             reservedList.forEach((guest, index) => {
+                // 創建父容器
+                const container = document.createElement("div");
+                container.className = "waitlist-container";
+                
                 const li = document.createElement("li");
                 li.className = "waitlist-item";
                 li.innerHTML = `訂${guest.id} - ${guest.count}位 - ${guest.title} ${guest.name} - ${guest.phone} - 訂位時間 ${guest.reservedTime}`;
@@ -389,7 +409,8 @@
                 buttonContainer.appendChild(cancelButton);
 
                 li.appendChild(buttonContainer);
-                list.appendChild(li);
+                container.appendChild(li); // 將 li 放入父級容器中
+                list.appendChild(container);
             });
         }
 
@@ -398,6 +419,9 @@
             list.innerHTML = "";
             
             waitingList.forEach((guest, index) => {
+                const container = document.createElement("div");
+                container.className = "waitlist-container";
+
                 const li = document.createElement("li");
                 li.className = "waitlist-item";
                 li.innerHTML = `候${guest.id} - ${guest.count}位 - ${guest.title} ${guest.name} - ${guest.phone}`;
@@ -429,7 +453,8 @@
                 buttonContainer.appendChild(cancelButton);
 
                 li.appendChild(buttonContainer);
-                list.appendChild(li);
+                container.appendChild(li); // 將 li 放入父級容器中
+                list.appendChild(container);
             });
         }
 
