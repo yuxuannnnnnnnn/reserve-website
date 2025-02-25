@@ -237,41 +237,11 @@
             background-color: #dc3545;
             color: #fff;
         }
-        /* 垃圾桶按鈕樣式 */
-        .clear-data-button {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            width: 30px; 
-            height: 30px; 
-            background-color: #ff4444; /* 紅色背景 */
-            border: none; /* 無邊框 */
-            border-radius: 50%; /* 圓形 */
-            color: white; /* 白色文字 */
-            font-size: 12px; /* 字體大小 */
-            font-weight: medium;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* 陰影效果 */
-            transition: background-color 0.3s ease;
-            padding: 0; /* 移除內邊距 */
-            line-height: 1; /* 確保文字垂直居中 */
-        }
-
-        .clear-data-button:hover {
-            background-color: #cc0000; /* 鼠標懸停時變深紅色 */
-        }
-
-        .clear-data-button:active {
-            background-color: #990000; /* 按鈕按下時變更深的紅色 */
-        }
+        
     </style>
 </head>
 <body>
     
-    <button class="clear-data-button" onclick="clearFirebaseData()">清空</button>
     
     <h1>餐廳桌位管理</h1>
     <!-- 同步狀態提示 -->
@@ -1078,24 +1048,7 @@ function cancelReservedOrder(index) {
             dataChanged = false;
         };
 
-        // 初始化 Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-
-        // 清除 Firebase 資料的函數
-        function clearFirebaseData() {
-            if (confirm("確定要清除所有資料嗎？此操作無法復原！")) {
-                database.ref().remove()
-                    .then(() => {
-                        console.log("Firebase 資料已刪除");
-                        alert("資料已清除！");
-                    })
-                    .catch((error) => {
-                        console.error("刪除資料失敗:", error);
-                        alert("刪除失敗：" + error.message);
-                    });
-            }
-        }
+        
     </script>
 </body>
 </html>
