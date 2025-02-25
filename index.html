@@ -283,7 +283,67 @@ ul {
         
     </div>
 
+<!-- 引入 Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+
+  
     <script>
+        const firebaseConfig = {
+           apiKey: "AIzaSyCp8_-QPKaR6Q6ECK9np3OPqW6dO967wpk",
+           authDomain: "reserve-a3e41.firebaseapp.com",
+           databaseURL: "https://reserve-a3e41-default-rtdb.firebaseio.com",
+           projectId: "reserve-a3e41",
+           storageBucket: "reserve-a3e41.firebasestorage.app",
+           messagingSenderId: "25864343238",
+           appId: "1:25864343238:web:7d31cb753ae557b49391c7",
+           measurementId: "G-EX5CQE079X"
+};
+
+        // 寫入資料
+       function writeData() {
+         database.ref("tables/table1").set({
+         status: "occupied",
+         time: "12:00"
+    })
+        .then(() => {
+        console.log("資料寫入成功！");
+    })
+        .catch((error) => {
+        console.error("資料寫入失敗：", error);
+    });
+}
+
+// 呼叫寫入資料函數
+writeData();
+
+        // 讀取資料
+      function readData() {
+          database.ref("tables/table1").once("value")
+         .then((snapshot) => {
+        const data = snapshot.val();
+        console.log("讀取到的資料：", data);
+    })
+    .catch((error) => {
+        console.error("讀取資料失敗：", error);
+    });
+}
+
+// 呼叫讀取資料函數
+readData();
+
+      // 即時監聽資料變化
+function listenData() {
+    database.ref("tables/table1").on("value", (snapshot) => {
+        const data = snapshot.val();
+        console.log("資料更新：", data);
+    });
+}
+
+// 呼叫監聽函數
+listenData();
+      
+      
         const tables = [1, 2, 4, 5, 6, 7, 8, 10];
         const tableStatus = {};
         let reservedList = [];
