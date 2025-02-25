@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -71,26 +71,31 @@
             font-size: 14px;
         }
         .row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .name-buttons {
-            display: flex;
-            gap: 5px;
-            margin-top: 5px;
-            justify-content: center;
-        }
-        .name-buttons button {
-            padding: 5px 10px;
-            background-color: #ddd;
-            border: none;
-            cursor: pointer;
-        }
-        .name-buttons button.active {
-            background-color: #000000;
-            color: white;
-        }
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+
+.name-buttons {
+    display: flex;
+    gap: 5px;
+    margin: 0; /* 移除 margin-top，讓它和輸入框同一行 */
+}
+
+.name-buttons button {
+    padding: 5px 10px;
+    background-color: #ddd;
+    border: none;
+    cursor: pointer;
+    border-radius: 2px;
+}
+
+.name-buttons button.active {
+    background-color: #000000;
+    color: white;
+}
+
 
         .waitlist-item {
             display: flex;
@@ -109,7 +114,7 @@
         }
         .button-container {
             display: flex;
-            gap: 5px;
+            gap: 8px;
             flex-wrap: wrap;
             justify-content: center;
             width: 100%;
@@ -120,7 +125,8 @@
             color: white;
             border: none;
             cursor: pointer;
-            margin: 2px;
+            
+            border-radius: 2px;
         }
         .confirm-button {
             padding: 5px 10px;
@@ -128,6 +134,7 @@
             color: white;
             border: none;
             cursor: pointer;
+            border-radius: 2px;
         }
         .cancel-button {
             padding: 5px 10px;
@@ -135,6 +142,7 @@
             color: white;
             border: none;
             cursor: pointer;
+            border-radius: 2px;
         }
         .time-info {
             font-size: 14px;
@@ -198,7 +206,13 @@ ul {
         }
         .tab-content.active {
             display: block;
+            
         }
+        .table-button:disabled {
+    background-color: #cccccc !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+}
     </style>
 </head>
 <body>
@@ -220,12 +234,13 @@ ul {
                 <input type="number" id="reservedCount" placeholder="人數" min="1">
             </div>
             <div class="row">
-                <input type="text" id="reservedName" placeholder="姓氏">
+                <input type="text" id="reservedName" placeholder="姓氏" style="width: 60px;">
+                <div class="name-buttons">
+                     <button id="mrButtonReserved" onclick="selectTitleReserved('先生')">先生</button>
+                     <button id="msButtonReserved" onclick="selectTitleReserved('小姐')">小姐</button>
             </div>
-            <div class="name-buttons">
-                <button id="mrButtonReserved" onclick="selectTitleReserved('先生')">先生</button>
-                <button id="msButtonReserved" onclick="selectTitleReserved('小姐')">小姐</button>
             </div>
+            
             <input type="tel" id="reservedPhone" placeholder="手機">
             <select id="reservedTime">
                 <option value="11:00">11:00</option>
@@ -255,12 +270,13 @@ ul {
                 <input type="number" id="waitingCount" placeholder="人數" min="1">
             </div>
             <div class="row">
-                <input type="text" id="waitingName" placeholder="姓氏">
+                <input type="text" id="waitingName" placeholder="姓氏" style="width: 60px;">
+                <div class="name-buttons">
+                     <button id="mrButtonWaiting" onclick="selectTitleWaiting('先生')">先生</button>
+                     <button id="msButtonWaiting" onclick="selectTitleWaiting('小姐')">小姐</button>
             </div>
-            <div class="name-buttons">
-                <button id="mrButtonWaiting" onclick="selectTitleWaiting('先生')">先生</button>
-                <button id="msButtonWaiting" onclick="selectTitleWaiting('小姐')">小姐</button>
             </div>
+            
             <input type="tel" id="waitingPhone" placeholder="手機">
             <button onclick="addToWaitingList()">新增候位</button>
         </div>
@@ -481,21 +497,22 @@ ul {
         }
 
         // 檢查兩個預訂時間是否可以共存
-        function canDoubleBook(time1, time2) {
-            // 檢查時間格式
-            const [hours1, minutes1] = time1.split(':').map(Number);
-            const [hours2, minutes2] = time2.split(':').map(Number);
-            
-            // 計算兩個時間點之間的分鐘差
-            const time1Minutes = hours1 * 60 + minutes1;
-            const time2Minutes = hours2 * 60 + minutes2;
-            
-            // 計算時間差的絕對值
-            const timeDiff = Math.abs(time1Minutes - time2Minutes);
-            
-            // 如果時間差大於等於90分鐘，則允許雙重預訂
-            return timeDiff >= 90;
-        }
+        // 修改原有函數 canDoubleBook，使其更清晰
+function canDoubleBook(time1, time2) {
+    const [hours1, minutes1] = time1.split(':').map(Number);
+    const [hours2, minutes2] = time2.split(':').map(Number);
+    
+    // 計算兩個時間點之間的分鐘差
+    const time1Minutes = hours1 * 60 + minutes1;
+    const time2Minutes = hours2 * 60 + minutes2;
+    
+    // 計算時間差的絕對值
+    const timeDiff = Math.abs(time1Minutes - time2Minutes);
+    
+    // 如果時間差大於等於90分鐘，則允許雙重預訂
+    return timeDiff >= 90;
+}
+
 
         function selectTitleReserved(title) {
             selectedTitleReserved = title;
@@ -555,49 +572,63 @@ ul {
             renderWaitingList();
         }
 
-        function renderReservedList() {
-            const list = document.getElementById("reservedList");
-            list.innerHTML = "";
-            
-            reservedList.forEach((guest, index) => {
-                // 創建父容器
-                const container = document.createElement("div");
-                container.className = "waitlist-container";
-                
-                const li = document.createElement("li");
-                li.className = "waitlist-item";
-                li.innerHTML = `訂${guest.id} - ${guest.count}位 - ${guest.title} ${guest.name} - ${guest.phone} - 訂位時間 ${guest.reservedTime}`;
-                
-                const buttonContainer = document.createElement("div");
-                buttonContainer.className = "button-container";
+        // 修改渲染預訂列表的函數，增加桌子按鈕禁用邏輯
+function renderReservedList() {
+    const list = document.getElementById("reservedList");
+    list.innerHTML = "";
+    
+    reservedList.forEach((guest, index) => {
+        // 創建父容器
+        const container = document.createElement("div");
+        container.className = "waitlist-container";
+        
+        const li = document.createElement("li");
+        li.className = "waitlist-item";
+        li.innerHTML = `訂${guest.id} - ${guest.count}位 - ${guest.title} ${guest.name} - ${guest.phone} - 訂位時間 ${guest.reservedTime}`;
+        
+        const buttonContainer = document.createElement("div");
+        buttonContainer.className = "button-container";
 
-                if (!guest.assignedTable) {
-                    tables.forEach(table => {
-                        const button = document.createElement("button");
-                        button.className = "table-button";
-                        button.textContent = `A${table}`;
-                        button.onclick = () => assignTable(guest.id, table, guest.reservedTime, index);
-                        buttonContainer.appendChild(button);
-                    });
+        if (!guest.assignedTable) {
+            tables.forEach(table => {
+                const button = document.createElement("button");
+                button.className = "table-button";
+                button.textContent = `A${table}`;
+                
+                // 檢查該桌是否有衝突的預訂時間
+                const isConflict = checkTimeConflict(table, guest.reservedTime);
+                
+                if (isConflict) {
+                    // 如果時間衝突，禁用按鈕
+                    button.disabled = true;
+                    button.style.backgroundColor = "#cccccc";
+                    button.style.cursor = "not-allowed";
+                    button.title = "此桌已有時間相近的預訂";
                 } else {
-                    const confirmButton = document.createElement("button");
-                    confirmButton.className = "confirm-button";
-                    confirmButton.textContent = `確認入座 A${guest.assignedTable}`;
-                    confirmButton.onclick = () => confirmSeating(guest.assignedTable, index);
-                    buttonContainer.appendChild(confirmButton);
+                    button.onclick = () => assignTable(guest.id, table, guest.reservedTime, index);
                 }
-
-                const cancelButton = document.createElement("button");
-                cancelButton.className = "cancel-button";
-                cancelButton.textContent = "取消訂位";
-                cancelButton.onclick = () => cancelReservedOrder(index);
-                buttonContainer.appendChild(cancelButton);
-
-                li.appendChild(buttonContainer);
-                container.appendChild(li); // 將 li 放入父級容器中
-                list.appendChild(container);
+                
+                buttonContainer.appendChild(button);
             });
+        } else {
+            const confirmButton = document.createElement("button");
+            confirmButton.className = "confirm-button";
+            confirmButton.textContent = `確認入座 A${guest.assignedTable}`;
+            confirmButton.onclick = () => confirmSeating(guest.assignedTable, index);
+            buttonContainer.appendChild(confirmButton);
         }
+
+        const cancelButton = document.createElement("button");
+        cancelButton.className = "cancel-button";
+        cancelButton.textContent = "取消訂位";
+        cancelButton.onclick = () => cancelReservedOrder(index);
+        buttonContainer.appendChild(cancelButton);
+
+        li.appendChild(buttonContainer);
+        container.appendChild(li); // 將 li 放入父級容器中
+        list.appendChild(container);
+    });
+}
 
         function renderWaitingList() {
     const list = document.getElementById("waitingList");
@@ -619,6 +650,7 @@ ul {
                 const button = document.createElement("button");
                 button.className = "table-button";
                 button.textContent = `A${table}`;
+                
                 button.onclick = () => assignWaitingTable(table, index);
                 buttonContainer.appendChild(button);
             });
@@ -642,6 +674,27 @@ ul {
         list.appendChild(container);
     });
 }
+// 新增函數：檢查是否存在時間衝突
+function checkTimeConflict(table, newReservationTime) {
+    const tableState = tableStatus[table];
+    
+    // 如果桌子是空的，沒有衝突
+    if (!tableState || tableState.status !== "reserved") {
+        return false;
+    }
+    
+    // 如果已經有次要預訂，一律視為衝突（不允許第三個預訂）
+    if (tableState.secondaryReservationId) {
+        return true;
+    }
+    
+    // 檢查與主要預訂的時間差
+    const canDouble = canDoubleBook(tableState.reservedTime, newReservationTime);
+    
+    // 如果不能雙重預訂，表示有衝突
+    return !canDouble;
+}
+
         // 檢查桌子是否可以分配給新的預訂
         function checkTableAvailability(table, newReservationTime) {
             // 如果桌子是空的，可以預訂
