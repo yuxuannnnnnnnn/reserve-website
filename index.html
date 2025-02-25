@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>餐廳桌位管理</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-database-compat.js"></script>
     <style>
         h1 {
             font-size: 0px; /* 調整 h1 的字體大小 */
@@ -75,11 +78,13 @@
             align-items: center;
             gap: 10px;
         }
+
         .name-buttons {
             display: flex;
             gap: 5px;
             margin: 0; /* 移除 margin-top，讓它和輸入框同一行 */
         }
+
         .name-buttons button {
             padding: 5px 10px;
             background-color: #ddd;
@@ -87,10 +92,12 @@
             cursor: pointer;
             border-radius: 2px;
         }
+
         .name-buttons button.active {
             background-color: #000000;
             color: white;
         }
+
         .waitlist-item {
             display: flex;
             flex-direction: column;
@@ -119,6 +126,7 @@
             color: white;
             border: none;
             cursor: pointer;
+            
             border-radius: 2px;
         }
         .confirm-button {
@@ -153,13 +161,16 @@
             margin: 0;
             width: 100%;
         }
+        /* 父級容器樣式 */
         .waitlist-container {
             display: flex;
             justify-content: center;
-            align-items: center;
-            width: 100%;
-            margin: 10px 0;
+            align-items: center;     /* 垂直置中 */
+            width: 100%;            /* 佔滿父元素寬度 */
+            margin: 10px 0;         /* 上下留一些間距 */
         }
+
+        /* 新增的 Tab 样式 */
         .tabs {
             display: flex;
             justify-content: center;
@@ -196,16 +207,42 @@
         }
         .tab-content.active {
             display: block;
+            
         }
         .table-button:disabled {
             background-color: #cccccc !important;
             cursor: not-allowed !important;
             opacity: 0.6;
         }
+        /* 添加同步提示的樣式 */
+        .sync-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 1000;
+            transition: opacity 0.3s;
+        }
+        .syncing {
+            background-color: #ffc107;
+            color: #000;
+        }
+        .synced {
+            background-color: #28a745;
+            color: #fff;
+        }
+        .sync-error {
+            background-color: #dc3545;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
     <h1>餐廳桌位管理</h1>
+    <!-- 同步狀態提示 -->
+    <div id="syncStatus" class="sync-status" style="display: none;"></div>
     <div class="table-container" id="tables"></div>
 
     <!-- Tab 切換按鈕 -->
@@ -223,12 +260,13 @@
                 <input type="number" id="reservedCount" placeholder="人數" min="1">
             </div>
             <div class="row">
-                <input type="text" id="reservedName" placeholder="姓氏" style="width: 82px;">
+                <input type="text" id="reservedName" placeholder="姓氏" style="width: 60px;">
                 <div class="name-buttons">
                      <button id="mrButtonReserved" onclick="selectTitleReserved('先生')">先生</button>
                      <button id="msButtonReserved" onclick="selectTitleReserved('小姐')">小姐</button>
                 </div>
             </div>
+            
             <input type="tel" id="reservedPhone" placeholder="手機">
             <select id="reservedTime">
                 <option value="11:00">11:00</option>
@@ -246,6 +284,7 @@
             </select>
             <button onclick="addToReservedList()">新增訂位</button>
         </div>
+        
     </div>
 
     <!-- 候位 Tab 內容 -->
@@ -257,20 +296,18 @@
                 <input type="number" id="waitingCount" placeholder="人數" min="1">
             </div>
             <div class="row">
-                <input type="text" id="waitingName" placeholder="姓氏" style="width: 82px;">
+                <input type="text" id="waitingName" placeholder="姓氏" style="width: 60px;">
                 <div class="name-buttons">
                      <button id="mrButtonWaiting" onclick="selectTitleWaiting('先生')">先生</button>
                      <button id="msButtonWaiting" onclick="selectTitleWaiting('小姐')">小姐</button>
                 </div>
             </div>
+            
             <input type="tel" id="waitingPhone" placeholder="手機">
             <button onclick="addToWaitingList()">新增候位</button>
         </div>
+        
     </div>
-
-    <!-- 引入 Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
 
     <script>
         // Firebase 配置
@@ -284,46 +321,191 @@
             appId: "1:25864343238:web:7d31cb753ae557b49391c7",
             measurementId: "G-EX5CQE079X"
         };
-
+        
         // 初始化 Firebase
-        const app = firebase.initializeApp(firebaseConfig);
+        firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-
+        
+        // 同步狀態顯示函數
+        function showSyncStatus(status, message) {
+            const syncStatus = document.getElementById('syncStatus');
+            syncStatus.textContent = message;
+            syncStatus.className = 'sync-status ' + status;
+            syncStatus.style.display = 'block';
+            
+            // 3秒後隱藏提示（除非是同步中狀態）
+            if (status !== 'syncing') {
+                setTimeout(() => {
+                    syncStatus.style.opacity = '0';
+                    setTimeout(() => {
+                        syncStatus.style.display = 'none';
+                        syncStatus.style.opacity = '1';
+                    }, 300);
+                }, 3000);
+            }
+        }
+        
         const tables = [1, 2, 4, 5, 6, 7, 8, 10];
-        const tableStatus = {};
+        let tableStatus = {};
         let reservedList = [];
         let waitingList = [];
         let reservationCounter = 1;
         let waitingCounter = 1;
         let selectedTitleReserved = "先生";
         let selectedTitleWaiting = "先生";
-        let dataChanged = false;
+        let dataChanged = false; // 用於追踪數據是否有變化
+        let isSyncing = false; // 避免同步衝突
 
-        // 從 Firebase 讀取訂位資料
-        function loadReservedList() {
-            database.ref("reservations").on("value", (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    reservedList = Object.values(data);
-                    renderReservedList();
+        // Firebase 數據變化監聽
+        function setupFirebaseListeners() {
+            // 監聽桌位狀態變化
+            database.ref('tableStatus').on('value', (snapshot) => {
+                if (!isSyncing) {
+                    const data = snapshot.val();
+                    if (data) {
+                        // 轉換Firebase數據格式（處理timestamp）
+                        tableStatus = {};
+                        Object.keys(data).forEach(table => {
+                            tableStatus[table] = convertFromFirebase(data[table]);
+                        });
+                        renderTables();
+                        showSyncStatus('synced', '已同步桌位狀態');
+                    }
                 }
+            }, (error) => {
+                console.error("桌位狀態讀取錯誤:", error);
+                showSyncStatus('sync-error', '同步錯誤：桌位狀態');
+            });
+            
+            // 監聽訂位列表變化
+            database.ref('reservedList').on('value', (snapshot) => {
+                if (!isSyncing) {
+                    const data = snapshot.val();
+                    if (data) {
+                        reservedList = Object.values(data);
+                        // 找出最大ID以便繼續計數
+                        const maxId = Math.max(...reservedList.map(item => item.id), 0);
+                        reservationCounter = maxId + 1;
+                        renderReservedList();
+                        showSyncStatus('synced', '已同步訂位資料');
+                    }
+                }
+            }, (error) => {
+                console.error("訂位列表讀取錯誤:", error);
+                showSyncStatus('sync-error', '同步錯誤：訂位資料');
+            });
+            
+            // 監聽候位列表變化
+            database.ref('waitingList').on('value', (snapshot) => {
+                if (!isSyncing) {
+                    const data = snapshot.val();
+                    if (data) {
+                        waitingList = Object.values(data);
+                        // 找出最大ID以便繼續計數
+                        const maxId = Math.max(...waitingList.map(item => item.id), 0);
+                        waitingCounter = maxId + 1;
+                        renderWaitingList();
+                        showSyncStatus('synced', '已同步候位資料');
+                    }
+                }
+            }, (error) => {
+                console.error("候位列表讀取錯誤:", error);
+                showSyncStatus('sync-error', '同步錯誤：候位資料');
             });
         }
-
-        // 從 Firebase 讀取候位資料
-        function loadWaitingList() {
-            database.ref("waitingList").on("value", (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    waitingList = Object.values(data);
-                    renderWaitingList();
+        
+        // 將對象轉換為Firebase可存儲的格式（處理Date對象）
+        function convertToFirebase(obj) {
+            if (!obj) return obj;
+            
+            const result = {};
+            Object.keys(obj).forEach(key => {
+                if (obj[key] instanceof Date) {
+                    // 將Date轉換為timestamp
+                    result[key] = {
+                        __isDate: true,
+                        timestamp: obj[key].getTime()
+                    };
+                } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                    result[key] = convertToFirebase(obj[key]);
+                } else {
+                    result[key] = obj[key];
                 }
             });
+            return result;
         }
+        
+        // 將Firebase數據轉換回原始格式
+        function convertFromFirebase(obj) {
+            if (!obj) return obj;
+            
+            const result = {};
+            Object.keys(obj).forEach(key => {
+                if (obj[key] && obj[key].__isDate && obj[key].timestamp) {
+                    // 將timestamp轉回Date對象
+                    result[key] = new Date(obj[key].timestamp);
+                } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                    result[key] = convertFromFirebase(obj[key]);
+                } else {
+                    result[key] = obj[key];
+                }
+            });
+            return result;
+        }
+        
+        // 同步數據到Firebase
+        function syncToFirebase() {
+            if (isSyncing) return;
+            
+            isSyncing = true;
+            showSyncStatus('syncing', '資料同步中...');
+            
+            // 轉換數據格式
+            const fbTableStatus = {};
+            Object.keys(tableStatus).forEach(table => {
+                fbTableStatus[table] = convertToFirebase(tableStatus[table]);
+            });
+            
+            // 創建一個批量更新對象
+            const updates = {};
+            updates['tableStatus'] = fbTableStatus;
+            updates['reservedList'] = reservedList.reduce((acc, item, index) => {
+                acc[index] = item;
+                return acc;
+            }, {});
+            updates['waitingList'] = waitingList.reduce((acc, item, index) => {
+                acc[index] = item;
+                return acc;
+            }, {});
+            
+            // 批量更新Firebase
+            database.ref().update(updates)
+                .then(() => {
+                    isSyncing = false;
+                    showSyncStatus('synced', '資料已同步');
+                })
+                .catch(error => {
+                    console.error("Firebase同步錯誤:", error);
+                    isSyncing = false;
+                    showSyncStatus('sync-error', '同步失敗：' + error.message);
+                });
+        }
+
+        // 添加頁面離開確認
+        window.addEventListener('beforeunload', function(e) {
+            if (dataChanged) {
+                // 舊版本的瀏覽器需要返回值
+                const confirmationMessage = '離開會清除所有資料，確定要離開嗎？';
+                e.returnValue = confirmationMessage;
+                return confirmationMessage;
+            }
+        });
 
         // 設置數據變化標記的函數
         function markDataChanged() {
             dataChanged = true;
+            // 數據有變化時同步到Firebase
+            syncToFirebase();
         }
 
         // Tab 切換功能
@@ -414,79 +596,79 @@
             });
         }
 
-    function toggleTable(table) {
-    const tableState = tableStatus[table];
-    
-    // If empty table, set to occupied
-    if (!tableState || tableState.status === "empty") {
-        tableStatus[table] = { 
-            status: "occupied", 
-            startTime: new Date() 
-        };
-        markDataChanged();
-        renderTables();
-        return;
-    }
-    
-    // If table has a reservation and no secondary reservation, do nothing
-    if (tableState?.status === "reserved" && !tableState?.secondaryReservationId) {
-        return;
-    }
-    
-    // If table has both primary and secondary reservations, swap them
-    if (tableState?.status === "reserved" && tableState?.secondaryReservationId) {
-        const tempId = tableState.reservationId;
-        const tempTime = tableState.reservedTime;
-        
-        tableStatus[table].reservationId = tableState.secondaryReservationId;
-        tableStatus[table].reservedTime = tableState.secondaryReservedTime;
-        
-        tableStatus[table].secondaryReservationId = tempId;
-        tableStatus[table].secondaryReservedTime = tempTime;
-        
-        markDataChanged();
-        renderTables();
-        return;
-    }
-    
-    // If table is occupied and has a secondary reservation
-    if (tableState?.status === "occupied" && tableState?.secondaryReservationId) {
-        tableStatus[table] = { 
-            status: "finished", 
-            secondaryReservationId: tableState.secondaryReservationId,
-            secondaryReservedTime: tableState.secondaryReservedTime
-        };
-        markDataChanged();
-        renderTables();
-        return;
-    }
-    
-    // If table is in "finished" state and has a secondary reservation
-    if (tableState?.status === "finished" && tableState?.secondaryReservationId) {
-        tableStatus[table] = { 
-            status: "reserved", 
-            reservationId: tableState.secondaryReservationId,
-            reservedTime: tableState.secondaryReservedTime,
-            secondaryReservationId: null,
-            secondaryReservedTime: null
-        };
-        markDataChanged();
-        renderTables();
-        return;
-    }
-    
-    // Standard state transitions for tables without secondary reservations
-    if (tableState.status === "occupied") {
-        tableStatus[table] = { status: "finished" };
-    } else if (tableState.status === "finished") {
-        tableStatus[table] = { status: "empty" };
-    }
-    
-    markDataChanged();
-    renderTables();
-    renderReservedList();
-    renderWaitingList();
-}
+        function toggleTable(table) {
+            const tableState = tableStatus[table];
+            
+            // If empty table, set to occupied
+            if (!tableState || tableState.status === "empty") {
+                tableStatus[table] = { 
+                    status: "occupied", 
+                    startTime: new Date() 
+                };
+                markDataChanged();
+                renderTables();
+                return;
+            }
+            
+            // If table has a reservation and no secondary reservation, do nothing
+            if (tableState?.status === "reserved" && !tableState?.secondaryReservationId) {
+                return;
+            }
+            
+            // If table has both primary and secondary reservations, swap them
+            if (tableState?.status === "reserved" && tableState?.secondaryReservationId) {
+                const tempId = tableState.reservationId;
+                const tempTime = tableState.reservedTime;
+                
+                tableStatus[table].reservationId = tableState.secondaryReservationId;
+                tableStatus[table].reservedTime = tableState.secondaryReservedTime;
+                
+                tableStatus[table].secondaryReservationId = tempId;
+                tableStatus[table].secondaryReservedTime = tempTime;
+                
+                markDataChanged();
+                renderTables();
+                return;
+            }
+            
+            // If table is occupied and has a secondary reservation
+            if (tableState?.status === "occupied" && tableState?.secondaryReservationId) {
+                tableStatus[table] = { 
+                    status: "finished", 
+                    secondaryReservationId: tableState.secondaryReservationId,
+                    secondaryReservedTime: tableState.secondaryReservedTime
+                };
+                markDataChanged();
+                renderTables();
+                return;
+            }
+            
+            // If table is in "finished" state and has a secondary reservation
+            if (tableState?.status === "finished" && tableState?.secondaryReservationId) {
+                tableStatus[table] = { 
+                    status: "reserved", 
+                    reservationId: tableState.secondaryReservationId,
+                    reservedTime: tableState.secondaryReservedTime,
+                    secondaryReservationId: null,
+                    secondaryReservedTime: null
+                };
+                markDataChanged();
+                renderTables();
+                return;
+            }
+            
+            // Standard state transitions for tables without secondary reservations
+            if (tableState.status === "occupied") {
+                tableStatus[table] = { status: "finished" };
+            } else if (tableState.status === "finished") {
+                tableStatus[table] = { status: "empty" };
+            }
+            
+            markDataChanged();
+            renderTables();
+            renderReservedList();
+            renderWaitingList();
+        }
 
         function formatTime(date) {
             return date.toLocaleTimeString("zh-TW", { 
@@ -513,22 +695,20 @@
         }
 
         // 檢查兩個預訂時間是否可以共存
-        // 修改原有函數 canDoubleBook，使其更清晰
-function canDoubleBook(time1, time2) {
-    const [hours1, minutes1] = time1.split(':').map(Number);
-    const [hours2, minutes2] = time2.split(':').map(Number);
-    
-    // 計算兩個時間點之間的分鐘差
-    const time1Minutes = hours1 * 60 + minutes1;
-    const time2Minutes = hours2 * 60 + minutes2;
-    
-    // 計算時間差的絕對值
-    const timeDiff = Math.abs(time1Minutes - time2Minutes);
-    
-    // 如果時間差大於等於90分鐘，則允許雙重預訂
-    return timeDiff >= 90;
-}
-
+        function canDoubleBook(time1, time2) {
+            const [hours1, minutes1] = time1.split(':').map(Number);
+            const [hours2, minutes2] = time2.split(':').map(Number);
+            
+            // 計算兩個時間點之間的分鐘差
+            const time1Minutes = hours1 * 60 + minutes1;
+            const time2Minutes = hours2 * 60 + minutes2;
+            
+            // 計算時間差的絕對值
+            const timeDiff = Math.abs(time1Minutes - time2Minutes);
+            
+            // 如果時間差大於等於90分鐘，則允許雙重預訂
+            return timeDiff >= 90;
+        }
 
         function selectTitleReserved(title) {
             selectedTitleReserved = title;
@@ -863,13 +1043,9 @@ function cancelReservedOrder(index) {
 
         // 初始化頁面
         window.onload = function() {
-            // 設置先生按鈕為初始選中狀態
+            // 设置先生按钮为初始选中状态
             document.getElementById("mrButtonReserved").classList.add("active");
             document.getElementById("mrButtonWaiting").classList.add("active");
-            
-            // 從 Firebase 加載資料
-            loadReservedList();
-            loadWaitingList();
             
             renderTables();
             renderReservedList();
@@ -877,10 +1053,7 @@ function cancelReservedOrder(index) {
             
             // 初始化時將數據變化標記設為 false
             dataChanged = false;
-        };
-
-
-      
+         };
     </script>
 </body>
 </html>
