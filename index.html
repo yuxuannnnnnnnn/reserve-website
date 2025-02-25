@@ -491,15 +491,7 @@
                 });
         }
 
-        // 添加頁面離開確認
-        window.addEventListener('beforeunload', function(e) {
-            if (dataChanged) {
-                // 舊版本的瀏覽器需要返回值
-                const confirmationMessage = '離開會清除所有資料，確定要離開嗎？';
-                e.returnValue = confirmationMessage;
-                return confirmationMessage;
-            }
-        });
+        
 
         // 設置數據變化標記的函數
         function markDataChanged() {
