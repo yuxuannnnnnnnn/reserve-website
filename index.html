@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -44,6 +44,14 @@
             left: 5px;
             font-size: 12px;
             color: #825400;
+        }
+        .reservation-id-secondary {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 12px;
+            color: #825400;
+            opacity: 0.6;
         }
         .empty { background-color: #ccc; }
         .reserved { background-color: #EFB700; }
@@ -269,6 +277,7 @@ ul {
         let selectedTitleReserved = "先生";
         let selectedTitleWaiting = "先生";
         let dataChanged = false; // 用於追踪數據是否有變化
+        let activeReservation = {}; // 存儲每個桌子的當前活動預訂
 
         // 添加頁面離開確認
         window.addEventListener('beforeunload', function(e) {
@@ -317,17 +326,27 @@ ul {
                 const tableDiv = document.createElement("div");
                 tableDiv.className = `table ${status}`;
                 
+                // 主要訂位ID
                 if (tableStatus[table]?.reservationId) {
                     const reservationId = document.createElement("div");
                     reservationId.className = "reservation-id";
                     reservationId.textContent = `訂${tableStatus[table].reservationId}`;
                     tableDiv.appendChild(reservationId);
                 }
+                
+                // 次要訂位ID
+                if (tableStatus[table]?.secondaryReservationId) {
+                    const secondaryReservationId = document.createElement("div");
+                    secondaryReservationId.className = "reservation-id-secondary";
+                    secondaryReservationId.textContent = `訂${tableStatus[table].secondaryReservationId}`;
+                    tableDiv.appendChild(secondaryReservationId);
+                }
 
                 const tableNumber = document.createElement("div");
                 tableNumber.textContent = `A${table}`;
                 tableDiv.appendChild(tableNumber);
 
+                // 如果是已入座狀態
                 if (status === "occupied" && tableStatus[table].startTime) {
                     const startTime = tableStatus[table].startTime;
                     const endTime = new Date(startTime.getTime() + 90 * 60000);
@@ -340,6 +359,7 @@ ul {
                     tableDiv.appendChild(timeInfo);
                 }
 
+                // 如果是訂位狀態，顯示當前活動的預訂信息
                 if (status === "reserved" && tableStatus[table]?.reservedTime) {
                     const timeInfo = document.createElement("div");
                     timeInfo.className = "time-info";
@@ -356,31 +376,85 @@ ul {
                     tableDiv.appendChild(timeInfo);
                 }
 
+                // 修改點擊事件處理邏輯
                 tableDiv.onclick = () => toggleTable(table);
                 container.appendChild(tableDiv);
             });
         }
 
-        function toggleTable(table) {
-            if (tableStatus[table]?.status === "reserved") {
-                return;
-            }
-            
-            if (!tableStatus[table] || tableStatus[table].status === "empty") {
-                tableStatus[table] = { 
-                    status: "occupied", 
-                    startTime: new Date() 
-                };
-            } else if (tableStatus[table].status === "occupied") {
-                tableStatus[table] = { status: "finished" };
-            } else {
-                tableStatus[table] = { status: "empty" };
-            }
-            markDataChanged(); // 標記數據已變化
-            renderTables();
-            renderReservedList();
-            renderWaitingList();
-        }
+    function toggleTable(table) {
+    const tableState = tableStatus[table];
+    
+    // If empty table, set to occupied
+    if (!tableState || tableState.status === "empty") {
+        tableStatus[table] = { 
+            status: "occupied", 
+            startTime: new Date() 
+        };
+        markDataChanged();
+        renderTables();
+        return;
+    }
+    
+    // If table has a reservation and no secondary reservation, do nothing
+    if (tableState?.status === "reserved" && !tableState?.secondaryReservationId) {
+        return;
+    }
+    
+    // If table has both primary and secondary reservations, swap them
+    if (tableState?.status === "reserved" && tableState?.secondaryReservationId) {
+        const tempId = tableState.reservationId;
+        const tempTime = tableState.reservedTime;
+        
+        tableStatus[table].reservationId = tableState.secondaryReservationId;
+        tableStatus[table].reservedTime = tableState.secondaryReservedTime;
+        
+        tableStatus[table].secondaryReservationId = tempId;
+        tableStatus[table].secondaryReservedTime = tempTime;
+        
+        markDataChanged();
+        renderTables();
+        return;
+    }
+    
+    // If table is occupied and has a secondary reservation
+    if (tableState?.status === "occupied" && tableState?.secondaryReservationId) {
+        tableStatus[table] = { 
+            status: "finished", 
+            secondaryReservationId: tableState.secondaryReservationId,
+            secondaryReservedTime: tableState.secondaryReservedTime
+        };
+        markDataChanged();
+        renderTables();
+        return;
+    }
+    
+    // If table is in "finished" state and has a secondary reservation
+    if (tableState?.status === "finished" && tableState?.secondaryReservationId) {
+        tableStatus[table] = { 
+            status: "reserved", 
+            reservationId: tableState.secondaryReservationId,
+            reservedTime: tableState.secondaryReservedTime,
+            secondaryReservationId: null,
+            secondaryReservedTime: null
+        };
+        markDataChanged();
+        renderTables();
+        return;
+    }
+    
+    // Standard state transitions for tables without secondary reservations
+    if (tableState.status === "occupied") {
+        tableStatus[table] = { status: "finished" };
+    } else if (tableState.status === "finished") {
+        tableStatus[table] = { status: "empty" };
+    }
+    
+    markDataChanged();
+    renderTables();
+    renderReservedList();
+    renderWaitingList();
+}
 
         function formatTime(date) {
             return date.toLocaleTimeString("zh-TW", { 
@@ -404,6 +478,23 @@ ul {
             date.setHours(hours);
             date.setMinutes(minutes + 90);
             return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+        }
+
+        // 檢查兩個預訂時間是否可以共存
+        function canDoubleBook(time1, time2) {
+            // 檢查時間格式
+            const [hours1, minutes1] = time1.split(':').map(Number);
+            const [hours2, minutes2] = time2.split(':').map(Number);
+            
+            // 計算兩個時間點之間的分鐘差
+            const time1Minutes = hours1 * 60 + minutes1;
+            const time2Minutes = hours2 * 60 + minutes2;
+            
+            // 計算時間差的絕對值
+            const timeDiff = Math.abs(time1Minutes - time2Minutes);
+            
+            // 如果時間差大於等於90分鐘，則允許雙重預訂
+            return timeDiff >= 90;
         }
 
         function selectTitleReserved(title) {
@@ -437,7 +528,7 @@ ul {
             };
             
             reservedList.push(reservation);
-            markDataChanged(); // 標記數據已變化
+            markDataChanged();
             clearReservedInputs();
             renderReservedList();
         }
@@ -459,7 +550,7 @@ ul {
             };
             
             waitingList.push(waiting);
-            markDataChanged(); // 標記數據已變化
+            markDataChanged();
             clearWaitingInputs();
             renderWaitingList();
         }
@@ -509,79 +600,126 @@ ul {
         }
 
         function renderWaitingList() {
-            const list = document.getElementById("waitingList");
-            list.innerHTML = "";
-            
-            waitingList.forEach((guest, index) => {
-                const container = document.createElement("div");
-                container.className = "waitlist-container";
+    const list = document.getElementById("waitingList");
+    list.innerHTML = "";
+    
+    waitingList.forEach((guest, index) => {
+        const container = document.createElement("div");
+        container.className = "waitlist-container";
 
-                const li = document.createElement("li");
-                li.className = "waitlist-item";
-                li.innerHTML = `候${guest.id} - ${guest.count}位 - ${guest.title} ${guest.name} - ${guest.phone}`;
-                
-                const buttonContainer = document.createElement("div");
-                buttonContainer.className = "button-container";
+        const li = document.createElement("li");
+        li.className = "waitlist-item";
+        li.innerHTML = `候${guest.id} - ${guest.count}位 - ${guest.title} ${guest.name} - ${guest.phone}`;
+        
+        const buttonContainer = document.createElement("div");
+        buttonContainer.className = "button-container";
 
-                if (!guest.assignedTable) {
-                    tables.forEach(table => {
-                        const button = document.createElement("button");
-                        button.className = "table-button";
-                        button.textContent = `A${table}`;
-                        button.onclick = () => assignWaitingTable(table, index);
-                        buttonContainer.appendChild(button);
-                    });
-                } else {
-                    li.innerHTML += ` - A${guest.assignedTable}`;
-                    const confirmButton = document.createElement("button");
-                    confirmButton.className = "confirm-button";
-                    confirmButton.textContent = "確認入座";
-                    confirmButton.onclick = () => confirmWaitingSeating(guest.assignedTable, index);
-                    buttonContainer.appendChild(confirmButton);
-                }
-
-                const cancelButton = document.createElement("button");
-                cancelButton.className = "cancel-button";
-                cancelButton.textContent = "取消候位";
-                cancelButton.onclick = () => cancelWaitingOrder(index);
-                buttonContainer.appendChild(cancelButton);
-
-                li.appendChild(buttonContainer);
-                container.appendChild(li); // 將 li 放入父級容器中
-                list.appendChild(container);
+        if (!guest.assignedTable) {
+            tables.forEach(table => {
+                const button = document.createElement("button");
+                button.className = "table-button";
+                button.textContent = `A${table}`;
+                button.onclick = () => assignWaitingTable(table, index);
+                buttonContainer.appendChild(button);
             });
+        } else {
+            li.innerHTML += ` - A${guest.assignedTable}`;
+            const confirmButton = document.createElement("button");
+            confirmButton.className = "confirm-button";
+            confirmButton.textContent = "確認入座";
+            confirmButton.onclick = () => confirmWaitingSeating(guest.assignedTable, index);
+            buttonContainer.appendChild(confirmButton);
+        }
+
+        const cancelButton = document.createElement("button");
+        cancelButton.className = "cancel-button";
+        cancelButton.textContent = "取消候位";
+        cancelButton.onclick = () => cancelWaitingOrder(index);
+        buttonContainer.appendChild(cancelButton);
+
+        li.appendChild(buttonContainer);
+        container.appendChild(li);
+        list.appendChild(container);
+    });
+}
+        // 檢查桌子是否可以分配給新的預訂
+        function checkTableAvailability(table, newReservationTime) {
+            // 如果桌子是空的，可以預訂
+            if (!tableStatus[table]) return false;
+            
+            // 如果桌子已經有一個預訂
+            if (tableStatus[table].status === "reserved") {
+                // 如果已經有次要預訂，不可再預訂
+                if (tableStatus[table].secondaryReservationId) return true;
+                
+                // 檢查與現有預訂的時間間隔是否允許雙重預訂
+                return !canDoubleBook(tableStatus[table].reservedTime, newReservationTime);
+            }
+            
+            return false;
         }
 
         function assignTable(reservationId, table, reservedTime, index) {
-            tableStatus[table] = {
-                status: "reserved",
-                reservationId: reservationId,
-                reservedTime: reservedTime
-            };
-            reservedList[index].assignedTable = table;
-            markDataChanged(); // 標記數據已變化
-            renderTables();
-            renderReservedList();
+    const tableState = tableStatus[table];
+    
+    // 如果桌子是空的或非預訂狀態
+    if (!tableState || tableState.status !== "reserved") {
+        tableStatus[table] = {
+            status: "reserved",
+            reservationId: reservationId,
+            reservedTime: reservedTime
+        };
+    } 
+    // 如果桌子已經有一個預訂但沒有次要預訂
+    else if (!tableState.secondaryReservationId) {
+        // 檢查時間是否符合雙重預訂的條件
+        if (canDoubleBook(tableState.reservedTime, reservedTime)) {
+            tableStatus[table].secondaryReservationId = reservationId;
+            tableStatus[table].secondaryReservedTime = reservedTime;
         }
-
+    }
+    
+    reservedList[index].assignedTable = table;
+    markDataChanged();
+    renderTables();
+    renderReservedList();
+}
         function assignWaitingTable(table, index) {
             waitingList[index].assignedTable = table;
-            markDataChanged(); // 標記數據已變化
+            markDataChanged();
             renderWaitingList();
         }
 
         function confirmSeating(table, index) {
-            tableStatus[table] = {
-                status: "occupied",
-                startTime: new Date()
-            };
-            reservedList.splice(index, 1);
-            markDataChanged(); // 標記數據已變化
-            renderTables();
-            renderReservedList();
-        }
+    const reservation = reservedList[index];
+    const tableState = tableStatus[table];
+    
+    
+    
+    // 如果是主要預訂被入座
+    if (tableState.reservationId === reservation.id) {
+        // 保存次要預訂資訊（如果存在）
+        tableStatus[table] = {
+            status: "occupied",
+            startTime: new Date(),
+            secondaryReservationId: tableState.secondaryReservationId,
+            secondaryReservedTime: tableState.secondaryReservedTime
+        };
+    } 
+    // 如果是次要預訂被入座（這種情況應該在上面的檢查中被捕獲，但仍保留代碼以防萬一）
+    else if (tableState.secondaryReservationId === reservation.id) {
+        alert("請切換為較早的預訂。");
+        return;
+    }
+    
+    // 從列表中移除已入座的預訂
+    reservedList.splice(index, 1);
+    markDataChanged();
+    renderTables();
+    renderReservedList();
+}
 
-        function confirmWaitingSeating(table, index) {
+    function confirmWaitingSeating(table, index) {
             tableStatus[table] = {
                 status: "occupied",
                 startTime: new Date()
@@ -592,16 +730,43 @@ ul {
             renderWaitingList();
         }
 
-        function cancelReservedOrder(index) {
-            const canceledReservation = reservedList[index];
-            if (canceledReservation.assignedTable) {
-                delete tableStatus[canceledReservation.assignedTable];
+function cancelReservedOrder(index) {
+    const canceledReservation = reservedList[index];
+    const table = canceledReservation.assignedTable;
+    
+    if (table) {
+        const tableState = tableStatus[table];
+        
+        // 如果是主要訂位取消
+        if (tableState.reservationId === canceledReservation.id) {
+            // 如果有次要訂位，將其提升為主要訂位
+            if (tableState.secondaryReservationId) {
+                tableStatus[table] = {
+                    status: "reserved",
+                    reservationId: tableState.secondaryReservationId,
+                    reservedTime: tableState.secondaryReservedTime
+                };
+            } else {
+                // 如果沒有次要訂位，清空桌子
+                delete tableStatus[table];
             }
-            reservedList.splice(index, 1);
-            markDataChanged(); // 標記數據已變化
-            renderReservedList();
-            renderTables();
+        } 
+        // 如果是次要訂位取消
+        else if (tableState.secondaryReservationId === canceledReservation.id) {
+            // 清除次要訂位
+            delete tableState.secondaryReservationId;
+            delete tableState.secondaryReservedTime;
         }
+    }
+    
+    // 從訂位列表中移除該筆訂位
+    reservedList.splice(index, 1);
+    markDataChanged();
+    renderTables();
+    renderReservedList();
+}
+
+
 
         function cancelWaitingOrder(index) {
             const canceledWaiting = waitingList[index];
@@ -609,7 +774,7 @@ ul {
                 delete tableStatus[canceledWaiting.assignedTable];
             }
             waitingList.splice(index, 1);
-            markDataChanged(); // 標記數據已變化
+            markDataChanged();
             renderWaitingList();
             renderTables();
         }
@@ -639,7 +804,7 @@ ul {
             
             // 初始化時將數據變化標記設為 false
             dataChanged = false;
-        };
+         };
     </script>
 </body>
 </html>
