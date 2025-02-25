@@ -1077,24 +1077,7 @@ function cancelReservedOrder(index) {
             dataChanged = false;
         };
 
-        // 初始化 Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-
-        // 清除 Firebase 資料的函數
-        function clearFirebaseData() {
-            if (confirm("確定要清除所有資料嗎？此操作無法復原！")) {
-                database.ref().remove()
-                    .then(() => {
-                        console.log("Firebase 資料已刪除");
-                        alert("資料已清除！");
-                    })
-                    .catch((error) => {
-                        console.error("刪除資料失敗:", error);
-                        alert("刪除失敗：" + error.message);
-                    });
-            }
-        }
+        
     </script>
 </body>
 </html>
