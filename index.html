@@ -322,29 +322,17 @@
             measurementId: "G-EX5CQE079X"
         };
         
-        // Firebase 配置
-        const firebaseConfig = {
-            apiKey: "AIzaSyCp8_-QPKaR6Q6ECK9np3OPqW6dO967wpk",
-            authDomain: "reserve-a3e41.firebaseapp.com",
-            databaseURL: "https://reserve-a3e41-default-rtdb.firebaseio.com",
-            projectId: "reserve-a3e41",
-            storageBucket: "reserve-a3e41.firebasestorage.app",
-            messagingSenderId: "25864343238",
-            appId: "1:25864343238:web:7d31cb753ae557b49391c7",
-            measurementId: "G-EX5CQE079X"
-        };
-
         // 初始化 Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-
+        
         // 同步狀態顯示函數
         function showSyncStatus(status, message) {
             const syncStatus = document.getElementById('syncStatus');
             syncStatus.textContent = message;
             syncStatus.className = 'sync-status ' + status;
             syncStatus.style.display = 'block';
-
+            
             // 3秒後隱藏提示（除非是同步中狀態）
             if (status !== 'syncing') {
                 setTimeout(() => {
@@ -356,7 +344,7 @@
                 }, 3000);
             }
         }
-
+        
         const tables = [1, 2, 4, 5, 6, 7, 8, 10];
         let tableStatus = {};
         let reservedList = [];
@@ -375,6 +363,7 @@
                 if (!isSyncing) {
                     const data = snapshot.val();
                     if (data) {
+                        // 轉換Firebase數據格式（處理timestamp）
                         tableStatus = {};
                         Object.keys(data).forEach(table => {
                             tableStatus[table] = convertFromFirebase(data[table]);
@@ -387,13 +376,14 @@
                 console.error("桌位狀態讀取錯誤:", error);
                 showSyncStatus('sync-error', '同步錯誤：桌位狀態');
             });
-
+            
             // 監聽訂位列表變化
             database.ref('reservedList').on('value', (snapshot) => {
                 if (!isSyncing) {
                     const data = snapshot.val();
                     if (data) {
                         reservedList = Object.values(data);
+                        // 找出最大ID以便繼續計數
                         const maxId = Math.max(...reservedList.map(item => item.id), 0);
                         reservationCounter = maxId + 1;
                         renderReservedList();
@@ -404,13 +394,14 @@
                 console.error("訂位列表讀取錯誤:", error);
                 showSyncStatus('sync-error', '同步錯誤：訂位資料');
             });
-
+            
             // 監聽候位列表變化
             database.ref('waitingList').on('value', (snapshot) => {
                 if (!isSyncing) {
                     const data = snapshot.val();
                     if (data) {
                         waitingList = Object.values(data);
+                        // 找出最大ID以便繼續計數
                         const maxId = Math.max(...waitingList.map(item => item.id), 0);
                         waitingCounter = maxId + 1;
                         renderWaitingList();
@@ -422,14 +413,15 @@
                 showSyncStatus('sync-error', '同步錯誤：候位資料');
             });
         }
-
+        
         // 將對象轉換為Firebase可存儲的格式（處理Date對象）
         function convertToFirebase(obj) {
             if (!obj) return obj;
-
+            
             const result = {};
             Object.keys(obj).forEach(key => {
                 if (obj[key] instanceof Date) {
+                    // 將Date轉換為timestamp
                     result[key] = {
                         __isDate: true,
                         timestamp: obj[key].getTime()
@@ -442,14 +434,15 @@
             });
             return result;
         }
-
+        
         // 將Firebase數據轉換回原始格式
         function convertFromFirebase(obj) {
             if (!obj) return obj;
-
+            
             const result = {};
             Object.keys(obj).forEach(key => {
                 if (obj[key] && obj[key].__isDate && obj[key].timestamp) {
+                    // 將timestamp轉回Date對象
                     result[key] = new Date(obj[key].timestamp);
                 } else if (typeof obj[key] === 'object' && obj[key] !== null) {
                     result[key] = convertFromFirebase(obj[key]);
@@ -459,31 +452,33 @@
             });
             return result;
         }
-
+        
         // 同步數據到Firebase
         function syncToFirebase() {
             if (isSyncing) return;
-
+            
             isSyncing = true;
             showSyncStatus('syncing', '資料同步中...');
-
+            
+            // 轉換數據格式
             const fbTableStatus = {};
             Object.keys(tableStatus).forEach(table => {
                 fbTableStatus[table] = convertToFirebase(tableStatus[table]);
             });
-
-            const updates = {
-                tableStatus: fbTableStatus,
-                reservedList: reservedList.reduce((acc, item, index) => {
-                    acc[index] = item;
-                    return acc;
-                }, {}),
-                waitingList: waitingList.reduce((acc, item, index) => {
-                    acc[index] = item;
-                    return acc;
-                }, {})
-            };
-
+            
+            // 創建一個批量更新對象
+            const updates = {};
+            updates['tableStatus'] = fbTableStatus;
+            updates['reservedList'] = reservedList.reduce((acc, item, index) => {
+                acc[index] = item;
+                return acc;
+            }, {});
+            updates['waitingList'] = waitingList.reduce((acc, item, index) => {
+                acc[index] = item;
+                return acc;
+            }, {});
+            
+            // 批量更新Firebase
             database.ref().update(updates)
                 .then(() => {
                     isSyncing = false;
@@ -496,9 +491,12 @@
                 });
         }
 
+        
+
         // 設置數據變化標記的函數
         function markDataChanged() {
             dataChanged = true;
+            // 數據有變化時同步到Firebase
             syncToFirebase();
         }
 
