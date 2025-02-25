@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -71,32 +71,26 @@
             font-size: 14px;
         }
         .row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-
-.name-buttons {
-    display: flex;
-    gap: 5px;
-    margin: 0; /* 移除 margin-top，讓它和輸入框同一行 */
-}
-
-.name-buttons button {
-    padding: 5px 10px;
-    background-color: #ddd;
-    border: none;
-    cursor: pointer;
-    border-radius: 2px;
-}
-
-.name-buttons button.active {
-    background-color: #000000;
-    color: white;
-}
-
-
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .name-buttons {
+            display: flex;
+            gap: 5px;
+            margin: 0; /* 移除 margin-top，讓它和輸入框同一行 */
+        }
+        .name-buttons button {
+            padding: 5px 10px;
+            background-color: #ddd;
+            border: none;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+        .name-buttons button.active {
+            background-color: #000000;
+            color: white;
+        }
         .waitlist-item {
             display: flex;
             flex-direction: column;
@@ -125,7 +119,6 @@
             color: white;
             border: none;
             cursor: pointer;
-            
             border-radius: 2px;
         }
         .confirm-button {
@@ -154,22 +147,19 @@
         .after-time {
             color: #e51f1a;
         }
-ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    width: 100%;
-}
-        /* 父級容器樣式 */
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+        }
         .waitlist-container {
             display: flex;
             justify-content: center;
-            align-items: center;     /* 垂直置中 */
-            width: 100%;            /* 佔滿父元素寬度 */
-            margin: 10px 0;         /* 上下留一些間距 */
+            align-items: center;
+            width: 100%;
+            margin: 10px 0;
         }
-
-        /* 新增的 Tab 样式 */
         .tabs {
             display: flex;
             justify-content: center;
@@ -206,13 +196,12 @@ ul {
         }
         .tab-content.active {
             display: block;
-            
         }
         .table-button:disabled {
-    background-color: #cccccc !important;
-    cursor: not-allowed !important;
-    opacity: 0.6;
-}
+            background-color: #cccccc !important;
+            cursor: not-allowed !important;
+            opacity: 0.6;
+        }
     </style>
 </head>
 <body>
@@ -238,9 +227,8 @@ ul {
                 <div class="name-buttons">
                      <button id="mrButtonReserved" onclick="selectTitleReserved('先生')">先生</button>
                      <button id="msButtonReserved" onclick="selectTitleReserved('小姐')">小姐</button>
+                </div>
             </div>
-            </div>
-            
             <input type="tel" id="reservedPhone" placeholder="手機">
             <select id="reservedTime">
                 <option value="11:00">11:00</option>
@@ -258,7 +246,6 @@ ul {
             </select>
             <button onclick="addToReservedList()">新增訂位</button>
         </div>
-        
     </div>
 
     <!-- 候位 Tab 內容 -->
@@ -274,76 +261,34 @@ ul {
                 <div class="name-buttons">
                      <button id="mrButtonWaiting" onclick="selectTitleWaiting('先生')">先生</button>
                      <button id="msButtonWaiting" onclick="selectTitleWaiting('小姐')">小姐</button>
+                </div>
             </div>
-            </div>
-            
             <input type="tel" id="waitingPhone" placeholder="手機">
             <button onclick="addToWaitingList()">新增候位</button>
         </div>
-        
     </div>
 
-<!-- 引入 Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+    <!-- 引入 Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
 
-  
     <script>
+        // Firebase 配置
         const firebaseConfig = {
-           apiKey: "AIzaSyCp8_-QPKaR6Q6ECK9np3OPqW6dO967wpk",
-           authDomain: "reserve-a3e41.firebaseapp.com",
-           databaseURL: "https://reserve-a3e41-default-rtdb.firebaseio.com",
-           projectId: "reserve-a3e41",
-           storageBucket: "reserve-a3e41.firebasestorage.app",
-           messagingSenderId: "25864343238",
-           appId: "1:25864343238:web:7d31cb753ae557b49391c7",
-           measurementId: "G-EX5CQE079X"
-};
+            apiKey: "AIzaSyCp8_-QPKaR6Q6ECK9np3OPqW6dO967wpk",
+            authDomain: "reserve-a3e41.firebaseapp.com",
+            databaseURL: "https://reserve-a3e41-default-rtdb.firebaseio.com",
+            projectId: "reserve-a3e41",
+            storageBucket: "reserve-a3e41.firebasestorage.app",
+            messagingSenderId: "25864343238",
+            appId: "1:25864343238:web:7d31cb753ae557b49391c7",
+            measurementId: "G-EX5CQE079X"
+        };
 
-        // 寫入資料
-       function writeData() {
-         database.ref("tables/table1").set({
-         status: "occupied",
-         time: "12:00"
-    })
-        .then(() => {
-        console.log("資料寫入成功！");
-    })
-        .catch((error) => {
-        console.error("資料寫入失敗：", error);
-    });
-}
+        // 初始化 Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
 
-// 呼叫寫入資料函數
-writeData();
-
-        // 讀取資料
-      function readData() {
-          database.ref("tables/table1").once("value")
-         .then((snapshot) => {
-        const data = snapshot.val();
-        console.log("讀取到的資料：", data);
-    })
-    .catch((error) => {
-        console.error("讀取資料失敗：", error);
-    });
-}
-
-// 呼叫讀取資料函數
-readData();
-
-      // 即時監聽資料變化
-function listenData() {
-    database.ref("tables/table1").on("value", (snapshot) => {
-        const data = snapshot.val();
-        console.log("資料更新：", data);
-    });
-}
-
-// 呼叫監聽函數
-listenData();
-      
-      
         const tables = [1, 2, 4, 5, 6, 7, 8, 10];
         const tableStatus = {};
         let reservedList = [];
@@ -352,18 +297,29 @@ listenData();
         let waitingCounter = 1;
         let selectedTitleReserved = "先生";
         let selectedTitleWaiting = "先生";
-        let dataChanged = false; // 用於追踪數據是否有變化
-        let activeReservation = {}; // 存儲每個桌子的當前活動預訂
+        let dataChanged = false;
 
-        // 添加頁面離開確認
-        window.addEventListener('beforeunload', function(e) {
-            if (dataChanged) {
-                // 舊版本的瀏覽器需要返回值
-                const confirmationMessage = '離開會清除所有資料，確定要離開嗎？';
-                e.returnValue = confirmationMessage;
-                return confirmationMessage;
-            }
-        });
+        // 從 Firebase 讀取訂位資料
+        function loadReservedList() {
+            database.ref("reservations").on("value", (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    reservedList = Object.values(data);
+                    renderReservedList();
+                }
+            });
+        }
+
+        // 從 Firebase 讀取候位資料
+        function loadWaitingList() {
+            database.ref("waitingList").on("value", (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    waitingList = Object.values(data);
+                    renderWaitingList();
+                }
+            });
+        }
 
         // 設置數據變化標記的函數
         function markDataChanged() {
@@ -907,9 +863,13 @@ function cancelReservedOrder(index) {
 
         // 初始化頁面
         window.onload = function() {
-            // 设置先生按钮为初始选中状态
+            // 設置先生按鈕為初始選中狀態
             document.getElementById("mrButtonReserved").classList.add("active");
             document.getElementById("mrButtonWaiting").classList.add("active");
+            
+            // 從 Firebase 加載資料
+            loadReservedList();
+            loadWaitingList();
             
             renderTables();
             renderReservedList();
@@ -917,7 +877,10 @@ function cancelReservedOrder(index) {
             
             // 初始化時將數據變化標記設為 false
             dataChanged = false;
-         };
+        };
+
+
+      
     </script>
 </body>
 </html>
