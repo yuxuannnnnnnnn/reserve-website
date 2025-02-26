@@ -396,45 +396,45 @@ body {
         let isSyncing = false; // 避免同步衝突
 
         // 修改后的 Firebase 监听器设置函数
-function setupFirebaseListeners() {
-    // 监听连接状态
+    function setupFirebaseListeners() {
+    // 監聽連接狀態
     const connectedRef = database.ref('.info/connected');
     connectedRef.on('value', (snap) => {
         if (snap.val() === true) {
-            console.log('已连接到 Firebase');
-            showSyncStatus('synced', '已连接到服务器');
+            console.log('已連接到 Firebase');
+            showSyncStatus('synced', '已連接到伺服器');
             
-            // 如果有未同步的数据，立即同步
+            // 如果有未同步的數據，立即同步
             if (dataChanged) {
                 syncToFirebase();
             }
         } else {
-            console.log('未连接到 Firebase');
-            showSyncStatus('sync-error', '服务器连接断开');
+            console.log('未連接到 Firebase');
+            showSyncStatus('sync-error', '伺服器連接斷開');
         }
     });
     
-    // 设置监听器的方法，包含重试逻辑
+    // 設置監聽器的方法，包含重試邏輯
     function setupListener(path, callback, errorHandler) {
         let retryCount = 0;
         const MAX_RETRIES = 5;
         
         function attemptListen() {
             database.ref(path).on('value', callback, (error) => {
-                console.error(`${path} 监听错误:`, error);
+                console.error(`${path} 監聽錯誤:`, error);
                 if (errorHandler) errorHandler(error);
                 
-                // 如果错误是暂时性的，尝试重新监听
+                // 如果錯誤是暫時性的，嘗試重新監聽
                 if (retryCount < MAX_RETRIES) {
                     retryCount++;
                     const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
-                    console.log(`尝试重新监听 ${path}，${retryCount}/${MAX_RETRIES}，等待 ${delay}ms`);
+                    console.log(`嘗試重新監聽 ${path}，${retryCount}/${MAX_RETRIES}，等待 ${delay}ms`);
                     
                     setTimeout(() => {
                         attemptListen();
                     }, delay);
                 } else {
-                    showSyncStatus('sync-error', `监听 ${path} 失败，请刷新页面`);
+                    showSyncStatus('sync-error', `監聽 ${path} 失敗，請重新整理頁面`);
                 }
             });
         }
@@ -442,26 +442,85 @@ function setupFirebaseListeners() {
         attemptListen();
     }
     
-    // 使用改进的监听器设置方法
+    // 使用改進的監聽器設置方法 - 桌位狀態
     setupListener('tableStatus', (snapshot) => {
         if (!isSyncing) {
             const data = snapshot.val();
             if (data) {
-                // 转换 Firebase 数据格式（处理 timestamp）
+                // 轉換 Firebase 數據格式（處理 timestamp）
                 tableStatus = {};
                 Object.keys(data).forEach(table => {
                     tableStatus[table] = convertFromFirebase(data[table]);
                 });
                 renderTables();
-                showSyncStatus('synced', '已同步桌位状态');
+                showSyncStatus('synced', '已同步桌位狀態');
             }
         }
     }, (error) => {
-        showSyncStatus('sync-error', '同步错误：桌位状态');
+        showSyncStatus('sync-error', '同步錯誤：桌位狀態');
     });
     
-    // 其他监听器也使用相同模式设置...
-    // 监听订位列表和候位列表等
+    // 監聽訂位列表
+    setupListener('reservedList', (snapshot) => {
+        if (!isSyncing) {
+            const data = snapshot.val();
+            if (data) {
+                reservedList = [];
+                // 將 Firebase 物件轉換為數組
+                Object.values(data).forEach(item => {
+                    reservedList.push(item);
+                });
+                // 更新計數器，找到最大的 ID 並加 1
+                if (reservedList.length > 0) {
+                    reservationCounter = Math.max(...reservedList.map(item => item.id)) + 1;
+                }
+                renderReservedList();
+                showSyncStatus('synced', '已同步訂位清單');
+            }
+        }
+    }, (error) => {
+        showSyncStatus('sync-error', '同步錯誤：訂位清單');
+    });
+    
+    // 監聽候位列表
+    setupListener('waitingList', (snapshot) => {
+        if (!isSyncing) {
+            const data = snapshot.val();
+            if (data) {
+                waitingList = [];
+                // 將 Firebase 物件轉換為數組
+                Object.values(data).forEach(item => {
+                    waitingList.push(item);
+                });
+                // 更新計數器，找到最大的 ID 並加 1
+                if (waitingList.length > 0) {
+                    waitingCounter = Math.max(...waitingList.map(item => item.id)) + 1;
+                }
+                renderWaitingList();
+                showSyncStatus('synced', '已同步候位清單');
+            }
+        }
+    }, (error) => {
+        showSyncStatus('sync-error', '同步錯誤：候位清單');
+    });
+    
+    // 監聽計數器（用於確保 ID 不重複）
+    setupListener('counters', (snapshot) => {
+        if (!isSyncing) {
+            const data = snapshot.val();
+            if (data) {
+                if (data.reservation && data.reservation > reservationCounter) {
+                    reservationCounter = data.reservation;
+                }
+                if (data.waiting && data.waiting > waitingCounter) {
+                    waitingCounter = data.waiting;
+                }
+                showSyncStatus('synced', '已同步計數器');
+            }
+        }
+    }, (error) => {
+        showSyncStatus('sync-error', '同步錯誤：計數器');
+    });
 }
         
         // 將對象轉換為Firebase可存儲的格式（處理Date對象）
@@ -529,23 +588,33 @@ function syncToFirebase() {
     showSyncStatus('syncing', '資料同步中...');
     
     try {
-        // 转换数据格式
+        // 轉換數據格式
         const fbTableStatus = {};
         Object.keys(tableStatus).forEach(table => {
             fbTableStatus[table] = convertToFirebase(tableStatus[table]);
         });
         
-        // 创建一个批量更新对象
+        // 創建一個批量更新物件
         const updates = {};
         updates['tableStatus'] = fbTableStatus;
+        
+        // 儲存訂位清單
         updates['reservedList'] = reservedList.reduce((acc, item, index) => {
             acc[index] = item;
             return acc;
         }, {});
+        
+        // 儲存候位清單
         updates['waitingList'] = waitingList.reduce((acc, item, index) => {
             acc[index] = item;
             return acc;
         }, {});
+        
+        // 儲存計數器
+        updates['counters'] = {
+            reservation: reservationCounter,
+            waiting: waitingCounter
+        };
         
         // 批量更新 Firebase
         database.ref().update(updates)
@@ -553,36 +622,133 @@ function syncToFirebase() {
                 isSyncing = false;
                 dataChanged = false;
                 showSyncStatus('synced', '資料已同步');
-                console.log("同步成功，时间：", new Date().toLocaleTimeString());
+                console.log("同步成功，時間：", new Date().toLocaleTimeString());
             })
             .catch(error => {
                 console.error("Firebase同步錯誤:", error);
                 isSyncing = false;
                 showSyncStatus('sync-error', '同步失敗：' + error.message);
                 
-                // 在同步失败后，过一段时间自动重试
+                // 在同步失敗後，過一段時間自動重試
                 setTimeout(() => {
                     if (dataChanged) {
-                        console.log("尝试重新同步...");
+                        console.log("嘗試重新同步...");
                         syncToFirebase();
                     }
                 }, 3000);
             });
     } catch (e) {
-        console.error("同步数据处理错误:", e);
+        console.error("同步數據處理錯誤:", e);
         isSyncing = false;
-        showSyncStatus('sync-error', '处理数据错误：' + e.message);
+        showSyncStatus('sync-error', '處理數據錯誤：' + e.message);
+    }
+}
+        // 3. 改進客戶端儲存機制，使用 localStorage 作為備份
+// 以防 Firebase 同步失敗時有臨時備份
+
+function backupToLocalStorage() {
+    try {
+        localStorage.setItem('tableStatus', JSON.stringify(tableStatus));
+        localStorage.setItem('reservedList', JSON.stringify(reservedList));
+        localStorage.setItem('waitingList', JSON.stringify(waitingList));
+        localStorage.setItem('reservationCounter', reservationCounter);
+        localStorage.setItem('waitingCounter', waitingCounter);
+        localStorage.setItem('backupTime', new Date().toISOString());
+        console.log('已備份到本地儲存');
+    } catch (e) {
+        console.error('備份到本地儲存失敗:', e);
+    }
+}
+
+function restoreFromLocalStorage() {
+    try {
+        const backupTime = localStorage.getItem('backupTime');
+        if (!backupTime) return false;
+        
+        // 確認備份不超過24小時
+        const backupDate = new Date(backupTime);
+        const now = new Date();
+        const hoursDiff = (now - backupDate) / (1000 * 60 * 60);
+        
+        if (hoursDiff > 24) {
+            console.log('本地備份過期');
+            return false;
+        }
+        
+        // 從 localStorage 恢復數據
+        const localTableStatus = JSON.parse(localStorage.getItem('tableStatus') || '{}');
+        const localReservedList = JSON.parse(localStorage.getItem('reservedList') || '[]');
+        const localWaitingList = JSON.parse(localStorage.getItem('waitingList') || '[]');
+        const localReservationCounter = parseInt(localStorage.getItem('reservationCounter') || '1');
+        const localWaitingCounter = parseInt(localStorage.getItem('waitingCounter') || '1');
+        
+        // 應用數據
+        tableStatus = localTableStatus;
+        reservedList = localReservedList;
+        waitingList = localWaitingList;
+        reservationCounter = localReservationCounter;
+        waitingCounter = localWaitingCounter;
+        
+        console.log('已從本地備份恢復數據');
+        return true;
+    } catch (e) {
+        console.error('從本地備份恢復失敗:', e);
+        return false;
     }
 }
 
         
 
-        // 設置數據變化標記的函數
-        function markDataChanged() {
-            dataChanged = true;
-            // 數據有變化時同步到Firebase
-            syncToFirebase();
+        // 修改 markDataChanged 函數
+function markDataChanged() {
+    dataChanged = true;
+    
+    // 清除之前的定時器
+    if (syncDebounceTimer) {
+        clearTimeout(syncDebounceTimer);
+    }
+    
+    // 先進行本地備份
+    backupToLocalStorage();
+    
+    // 設置新的定時器，延遲 500ms 同步數據
+    syncDebounceTimer = setTimeout(() => {
+        syncToFirebase();
+    }, 500);
+}
+        // 5. 修改頁面初始化函數，確保在 Firebase 連接失敗時嘗試從本地恢復
+
+window.onload = function() {
+    document.getElementById("mrButtonReserved").classList.add("active");
+    document.getElementById("mrButtonWaiting").classList.add("active");
+    
+    // 先從 Firebase 載入數據
+    setupFirebaseListeners();
+    
+    // 如果 Firebase 連接失敗或數據為空，嘗試從本地恢復
+    setTimeout(() => {
+        if (reservedList.length === 0 && waitingList.length === 0) {
+            if (restoreFromLocalStorage()) {
+                renderTables();
+                renderReservedList();
+                renderWaitingList();
+                markDataChanged(); // 確保恢復的數據會同步回 Firebase
+            }
         }
+    }, 2000); // 給 Firebase 2秒時間載入數據
+    
+    renderTables();
+    renderReservedList();
+    renderWaitingList();
+    
+    dataChanged = false;
+};
+
+// 6. 新增一個自動儲存功能，定期將數據備份到 localStorage
+setInterval(() => {
+    backupToLocalStorage();
+}, 30000); // 每30秒備份一次
+
 
         // Tab 切換功能
         function openTab(tabName) {
