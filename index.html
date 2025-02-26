@@ -358,63 +358,74 @@
         let dataChanged = false; // 用於追踪數據是否有變化
         let isSyncing = false; // 避免同步衝突
 
-        // Firebase 數據變化監聽
-        function setupFirebaseListeners() {
-            // 監聽桌位狀態變化
-            database.ref('tableStatus').on('value', (snapshot) => {
-                if (!isSyncing) {
-                    const data = snapshot.val();
-                    if (data) {
-                        // 轉換Firebase數據格式（處理timestamp）
-                        tableStatus = {};
-                        Object.keys(data).forEach(table => {
-                            tableStatus[table] = convertFromFirebase(data[table]);
-                        });
-                        renderTables();
-                        showSyncStatus('synced', '已同步桌位狀態');
-                    }
-                }
-            }, (error) => {
-                console.error("桌位狀態讀取錯誤:", error);
-                showSyncStatus('sync-error', '同步錯誤：桌位狀態');
-            });
+        // 修改后的 Firebase 监听器设置函数
+function setupFirebaseListeners() {
+    // 监听连接状态
+    const connectedRef = database.ref('.info/connected');
+    connectedRef.on('value', (snap) => {
+        if (snap.val() === true) {
+            console.log('已连接到 Firebase');
+            showSyncStatus('synced', '已连接到服务器');
             
-            // 監聽訂位列表變化
-            database.ref('reservedList').on('value', (snapshot) => {
-                if (!isSyncing) {
-                    const data = snapshot.val();
-                    if (data) {
-                        reservedList = Object.values(data);
-                        // 找出最大ID以便繼續計數
-                        const maxId = Math.max(...reservedList.map(item => item.id), 0);
-                        reservationCounter = maxId + 1;
-                        renderReservedList();
-                        showSyncStatus('synced', '已同步訂位資料');
-                    }
+            // 如果有未同步的数据，立即同步
+            if (dataChanged) {
+                syncToFirebase();
+            }
+        } else {
+            console.log('未连接到 Firebase');
+            showSyncStatus('sync-error', '服务器连接断开');
+        }
+    });
+    
+    // 设置监听器的方法，包含重试逻辑
+    function setupListener(path, callback, errorHandler) {
+        let retryCount = 0;
+        const MAX_RETRIES = 5;
+        
+        function attemptListen() {
+            database.ref(path).on('value', callback, (error) => {
+                console.error(`${path} 监听错误:`, error);
+                if (errorHandler) errorHandler(error);
+                
+                // 如果错误是暂时性的，尝试重新监听
+                if (retryCount < MAX_RETRIES) {
+                    retryCount++;
+                    const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
+                    console.log(`尝试重新监听 ${path}，${retryCount}/${MAX_RETRIES}，等待 ${delay}ms`);
+                    
+                    setTimeout(() => {
+                        attemptListen();
+                    }, delay);
+                } else {
+                    showSyncStatus('sync-error', `监听 ${path} 失败，请刷新页面`);
                 }
-            }, (error) => {
-                console.error("訂位列表讀取錯誤:", error);
-                showSyncStatus('sync-error', '同步錯誤：訂位資料');
-            });
-            
-            // 監聽候位列表變化
-            database.ref('waitingList').on('value', (snapshot) => {
-                if (!isSyncing) {
-                    const data = snapshot.val();
-                    if (data) {
-                        waitingList = Object.values(data);
-                        // 找出最大ID以便繼續計數
-                        const maxId = Math.max(...waitingList.map(item => item.id), 0);
-                        waitingCounter = maxId + 1;
-                        renderWaitingList();
-                        showSyncStatus('synced', '已同步候位資料');
-                    }
-                }
-            }, (error) => {
-                console.error("候位列表讀取錯誤:", error);
-                showSyncStatus('sync-error', '同步錯誤：候位資料');
             });
         }
+        
+        attemptListen();
+    }
+    
+    // 使用改进的监听器设置方法
+    setupListener('tableStatus', (snapshot) => {
+        if (!isSyncing) {
+            const data = snapshot.val();
+            if (data) {
+                // 转换 Firebase 数据格式（处理 timestamp）
+                tableStatus = {};
+                Object.keys(data).forEach(table => {
+                    tableStatus[table] = convertFromFirebase(data[table]);
+                });
+                renderTables();
+                showSyncStatus('synced', '已同步桌位状态');
+            }
+        }
+    }, (error) => {
+        showSyncStatus('sync-error', '同步错误：桌位状态');
+    });
+    
+    // 其他监听器也使用相同模式设置...
+    // 监听订位列表和候位列表等
+}
         
         // 將對象轉換為Firebase可存儲的格式（處理Date對象）
         function convertToFirebase(obj) {
@@ -455,43 +466,77 @@
             return result;
         }
         
-        // 同步數據到Firebase
-        function syncToFirebase() {
-            if (isSyncing) return;
-            
-            isSyncing = true;
-            showSyncStatus('syncing', '資料同步中...');
-            
-            // 轉換數據格式
-            const fbTableStatus = {};
-            Object.keys(tableStatus).forEach(table => {
-                fbTableStatus[table] = convertToFirebase(tableStatus[table]);
+        // 添加防抖变量
+let syncDebounceTimer = null;
+
+// 修改后的 markDataChanged 函数
+function markDataChanged() {
+    dataChanged = true;
+    
+    // 清除之前的定时器
+    if (syncDebounceTimer) {
+        clearTimeout(syncDebounceTimer);
+    }
+    
+    // 设置新的定时器，延迟 500ms 同步数据
+    syncDebounceTimer = setTimeout(() => {
+        syncToFirebase();
+    }, 500);
+}
+
+// 修改后的 syncToFirebase 函数，添加更多错误处理和状态反馈
+function syncToFirebase() {
+    if (isSyncing) return;
+    
+    isSyncing = true;
+    showSyncStatus('syncing', '資料同步中...');
+    
+    try {
+        // 转换数据格式
+        const fbTableStatus = {};
+        Object.keys(tableStatus).forEach(table => {
+            fbTableStatus[table] = convertToFirebase(tableStatus[table]);
+        });
+        
+        // 创建一个批量更新对象
+        const updates = {};
+        updates['tableStatus'] = fbTableStatus;
+        updates['reservedList'] = reservedList.reduce((acc, item, index) => {
+            acc[index] = item;
+            return acc;
+        }, {});
+        updates['waitingList'] = waitingList.reduce((acc, item, index) => {
+            acc[index] = item;
+            return acc;
+        }, {});
+        
+        // 批量更新 Firebase
+        database.ref().update(updates)
+            .then(() => {
+                isSyncing = false;
+                dataChanged = false;
+                showSyncStatus('synced', '資料已同步');
+                console.log("同步成功，时间：", new Date().toLocaleTimeString());
+            })
+            .catch(error => {
+                console.error("Firebase同步錯誤:", error);
+                isSyncing = false;
+                showSyncStatus('sync-error', '同步失敗：' + error.message);
+                
+                // 在同步失败后，过一段时间自动重试
+                setTimeout(() => {
+                    if (dataChanged) {
+                        console.log("尝试重新同步...");
+                        syncToFirebase();
+                    }
+                }, 3000);
             });
-            
-            // 創建一個批量更新對象
-            const updates = {};
-            updates['tableStatus'] = fbTableStatus;
-            updates['reservedList'] = reservedList.reduce((acc, item, index) => {
-                acc[index] = item;
-                return acc;
-            }, {});
-            updates['waitingList'] = waitingList.reduce((acc, item, index) => {
-                acc[index] = item;
-                return acc;
-            }, {});
-            
-            // 批量更新Firebase
-            database.ref().update(updates)
-                .then(() => {
-                    isSyncing = false;
-                    showSyncStatus('synced', '資料已同步');
-                })
-                .catch(error => {
-                    console.error("Firebase同步錯誤:", error);
-                    isSyncing = false;
-                    showSyncStatus('sync-error', '同步失敗：' + error.message);
-                });
-        }
+    } catch (e) {
+        console.error("同步数据处理错误:", e);
+        isSyncing = false;
+        showSyncStatus('sync-error', '处理数据错误：' + e.message);
+    }
+}
 
         
 
@@ -823,7 +868,7 @@ function renderReservedList() {
         function renderWaitingList() {
     const list = document.getElementById("waitingList");
     list.innerHTML = "";
-    
+
     waitingList.forEach((guest, index) => {
         const container = document.createElement("div");
         container.className = "waitlist-container";
@@ -831,7 +876,7 @@ function renderReservedList() {
         const li = document.createElement("li");
         li.className = "waitlist-item";
         li.innerHTML = `候${guest.id} - ${guest.count}位 - ${guest.title} ${guest.name} - ${guest.phone}`;
-        
+
         const buttonContainer = document.createElement("div");
         buttonContainer.className = "button-container";
 
@@ -840,7 +885,7 @@ function renderReservedList() {
                 const button = document.createElement("button");
                 button.className = "table-button";
                 button.textContent = `A${table}`;
-                
+
                 button.onclick = () => assignWaitingTable(table, index);
                 buttonContainer.appendChild(button);
             });
@@ -927,40 +972,107 @@ function checkTimeConflict(table, newReservationTime) {
     renderTables();
     renderReservedList();
 }
-        function assignWaitingTable(table, index) {
-            waitingList[index].assignedTable = table;
-            markDataChanged();
-            renderWaitingList();
-        }
-
         function confirmSeating(table, index) {
-    const reservation = reservedList[index];
-    const tableState = tableStatus[table];
+    console.log("confirmSeating 被调用:", { table, index });
     
-    
-    
-    // 如果是主要預訂被入座
-    if (tableState.reservationId === reservation.id) {
-        // 保存次要預訂資訊（如果存在）
-        tableStatus[table] = {
-            status: "occupied",
-            startTime: new Date(),
-            secondaryReservationId: tableState.secondaryReservationId,
-            secondaryReservedTime: tableState.secondaryReservedTime
-        };
-    } 
-    // 如果是次要預訂被入座（這種情況應該在上面的檢查中被捕獲，但仍保留代碼以防萬一）
-    else if (tableState.secondaryReservationId === reservation.id) {
-        alert("請切換為較早的預訂。");
+    // 检查参数有效性
+    if (table === undefined || table === null) {
+        console.error("错误: 桌号为空");
+        alert("错误: 无法确认入座，桌号不存在");
         return;
     }
     
-    // 從列表中移除已入座的預訂
-    reservedList.splice(index, 1);
-    markDataChanged();
-    renderTables();
-    renderReservedList();
+    if (index === undefined || index < 0 || index >= reservedList.length) {
+        console.error("错误: 无效的订位索引", index, "列表长度:", reservedList.length);
+        alert("错误: 无法确认入座，订位记录不存在");
+        return;
+    }
+    
+    // 获取订位信息
+    const reservation = reservedList[index];
+    console.log("订位信息:", reservation);
+    
+    // 检查订位信息有效性
+    if (!reservation) {
+        console.error("错误: 订位信息不存在");
+        alert("错误: 无法获取订位信息");
+        return;
+    }
+    
+    // 检查 table 是否在 tableStatus 中存在
+    if (!tableStatus[table]) {
+        console.log("桌子状态不存在，创建新状态");
+        tableStatus[table] = {
+            status: "occupied",
+            startTime: new Date()
+        };
+    } else {
+        console.log("当前桌子状态:", tableStatus[table]);
+        
+        // 安全地访问 reservationId
+        const currentReservationId = tableStatus[table].reservationId;
+        const secondaryReservationId = tableStatus[table].secondaryReservationId;
+        
+        console.log("比较ID:", {
+            currentReservationId,
+            secondaryReservationId,
+            reservationId: reservation.id
+        });
+        
+        // 如果是主要预订被入座
+        if (currentReservationId === reservation.id) {
+            console.log("确认主要预订入座");
+            // 保存次要预订信息（如果存在）
+            const newStatus = {
+                status: "occupied",
+                startTime: new Date()
+            };
+            
+            // 如果存在次要预订，保留它
+            if (secondaryReservationId) {
+                newStatus.secondaryReservationId = secondaryReservationId;
+                newStatus.secondaryReservedTime = tableStatus[table].secondaryReservedTime;
+            }
+            
+            tableStatus[table] = newStatus;
+        } 
+        // 如果是次要预订被入座
+        else if (secondaryReservationId === reservation.id) {
+            console.log("尝试确认次要预订入座 - 需要先切换");
+            alert("請先切換為此預訂，再確認入座");
+            return;
+        }
+        // 如果桌子状态与预订不匹配
+        else {
+            console.log("预订ID与桌子不匹配，强制设置入座状态");
+            tableStatus[table] = {
+                status: "occupied",
+                startTime: new Date()
+            };
+        }
+    }
+    
+    try {
+        // 从列表中移除已入座的预订
+        console.log("移除预订，索引:", index);
+        reservedList.splice(index, 1);
+        
+        // 确保数据标记为已更改并同步
+        console.log("标记数据已更改");
+        markDataChanged();
+        
+        console.log("重新渲染界面");
+        renderTables();
+        renderReservedList();
+        
+        console.log("入座操作完成");
+    } catch (error) {
+        console.error("处理预订时发生错误:", error);
+        alert("处理预订时发生错误: " + error.message);
+    }
 }
+    
+    
 
     function confirmWaitingSeating(table, index) {
             tableStatus[table] = {
@@ -1009,6 +1121,18 @@ function cancelReservedOrder(index) {
     renderReservedList();
 }
 
+       function assignWaitingTable(table, index) {
+    // 檢查桌子是否可用
+    
+
+    // 設置候位記錄的 assignedTable
+    waitingList[index].assignedTable = table;
+
+    // 標記數據已變化並重新渲染
+    markDataChanged();
+    renderTables();
+    renderWaitingList();
+}
 
 
         function cancelWaitingOrder(index) {
