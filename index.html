@@ -1103,11 +1103,10 @@ document.head.appendChild(style);
     // 自動聚焦到輸入框
     input.focus();
 }
-    // 等待彈窗的過渡效果完成後再聚焦
-popup.addEventListener("transitionend", () => {
+    // 延遲聚焦到輸入框
+setTimeout(() => {
     input.focus();
-}, { once: true });
-
+}, 300); // 延遲 300 毫秒
 
         function toggleTable(table) {
             const tableState = tableStatus[table];
