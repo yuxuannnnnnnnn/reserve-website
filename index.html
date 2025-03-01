@@ -911,6 +911,7 @@ window.addEventListener('load', function() {
         const tableDiv = document.createElement("div");
         tableDiv.className = `table ${status}`;
         
+        // 顯示主要訂位 ID
         if (tableStatus[table]?.reservationId) {
             const reservationId = document.createElement("div");
             reservationId.className = "reservation-id";
@@ -918,6 +919,7 @@ window.addEventListener('load', function() {
             tableDiv.appendChild(reservationId);
         }
         
+        // 顯示次要訂位 ID
         if (tableStatus[table]?.secondaryReservationId) {
             const secondaryReservationId = document.createElement("div");
             secondaryReservationId.className = "reservation-id-secondary";
@@ -925,6 +927,7 @@ window.addEventListener('load', function() {
             tableDiv.appendChild(secondaryReservationId);
         }
 
+        // 顯示桌號
         const tableNumber = document.createElement("div");
         tableNumber.textContent = `A${table}`;
         tableDiv.appendChild(tableNumber);
@@ -943,15 +946,19 @@ window.addEventListener('load', function() {
 
             // 長按事件監聽（兼容桌面和手機）
             let longPressTimer;
+            let isLongPress = false; // 標記是否為長按
 
-            const startLongPress = () => {
+            const startLongPress = (e) => {
+                e.preventDefault(); // 阻止默認行為
+                isLongPress = false; // 重置標記
                 longPressTimer = setTimeout(() => {
+                    isLongPress = true; // 標記為長按
                     changeTableTime(table);
                 }, 1000); // 長按 1 秒觸發
             };
 
             const cancelLongPress = () => {
-                clearTimeout(longPressTimer);
+                clearTimeout(longPressTimer); // 清除計時器
             };
 
             // 桌面端事件
@@ -963,12 +970,20 @@ window.addEventListener('load', function() {
             tableDiv.addEventListener('touchstart', startLongPress);
             tableDiv.addEventListener('touchend', cancelLongPress);
             tableDiv.addEventListener('touchcancel', cancelLongPress);
-        }
 
-        tableDiv.addEventListener('touchstart', (e) => {
-    e.preventDefault(); // 阻止默認行為
-    startLongPress();
-});
+            // 阻止手機端長按的默認行為
+            tableDiv.addEventListener('contextmenu', (e) => {
+                e.preventDefault(); // 阻止默認的上下文選單
+            });
+
+            // 點擊事件
+            tableDiv.addEventListener('click', (e) => {
+                if (!isLongPress) { // 如果不是長按，則觸發點擊事件
+                    toggleTable(table);
+                }
+                isLongPress = false; // 重置標記
+            });
+        }
 
         // 如果是訂位狀態，顯示當前活動的預訂信息
         if (status === "reserved" && tableStatus[table]?.reservedTime) {
@@ -987,7 +1002,7 @@ window.addEventListener('load', function() {
             tableDiv.appendChild(timeInfo);
         }
 
-        tableDiv.onclick = () => toggleTable(table);
+        // 將桌位添加到容器中
         container.appendChild(tableDiv);
     });
 }
