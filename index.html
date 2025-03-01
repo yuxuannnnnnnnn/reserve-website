@@ -1099,14 +1099,7 @@ document.head.appendChild(style);
 
     // 將彈出框添加到頁面中
     document.body.appendChild(overlay);
-
-    // 自動聚焦到輸入框
-    input.focus();
 }
-    // 延遲聚焦到輸入框
-setTimeout(() => {
-    input.focus();
-}, 1000); // 延遲 300 毫秒
 
         function toggleTable(table) {
             const tableState = tableStatus[table];
