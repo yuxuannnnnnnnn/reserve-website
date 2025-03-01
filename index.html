@@ -941,22 +941,34 @@ window.addEventListener('load', function() {
             ;
             tableDiv.appendChild(timeInfo);
 
-            // 長按事件監聽
+            // 長按事件監聽（兼容桌面和手機）
             let longPressTimer;
-            tableDiv.addEventListener('mousedown', () => {
+
+            const startLongPress = () => {
                 longPressTimer = setTimeout(() => {
                     changeTableTime(table);
                 }, 1000); // 長按 1 秒觸發
-            });
+            };
 
-            tableDiv.addEventListener('mouseup', () => {
+            const cancelLongPress = () => {
                 clearTimeout(longPressTimer);
-            });
+            };
 
-            tableDiv.addEventListener('mouseleave', () => {
-                clearTimeout(longPressTimer);
-            });
+            // 桌面端事件
+            tableDiv.addEventListener('mousedown', startLongPress);
+            tableDiv.addEventListener('mouseup', cancelLongPress);
+            tableDiv.addEventListener('mouseleave', cancelLongPress);
+
+            // 手機端事件
+            tableDiv.addEventListener('touchstart', startLongPress);
+            tableDiv.addEventListener('touchend', cancelLongPress);
+            tableDiv.addEventListener('touchcancel', cancelLongPress);
         }
+
+        tableDiv.addEventListener('touchstart', (e) => {
+    e.preventDefault(); // 阻止默認行為
+    startLongPress();
+});
 
         // 如果是訂位狀態，顯示當前活動的預訂信息
         if (status === "reserved" && tableStatus[table]?.reservedTime) {
