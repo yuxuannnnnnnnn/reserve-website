@@ -1103,10 +1103,11 @@ document.head.appendChild(style);
     // 自動聚焦到輸入框
     input.focus();
 }
-    // 延遲聚焦到輸入框
-setTimeout(() => {
+    // 等待彈窗完全顯示後再聚焦
+requestAnimationFrame(() => {
     input.focus();
-}, 100); // 延遲 100 毫秒
+});
+
 
         function toggleTable(table) {
             const tableState = tableStatus[table];
