@@ -944,46 +944,42 @@ window.addEventListener('load', function() {
             ;
             tableDiv.appendChild(timeInfo);
 
-            // 長按事件監聽（兼容桌面和手機）
-            let longPressTimer;
-            let isLongPress = false; // 標記是否為長按
+            // 長按事件監聽
+let longPressTimer;
+let isLongPress = false;
 
-            const startLongPress = (e) => {
-                e.preventDefault(); // 阻止默認行為
-                isLongPress = false; // 重置標記
-                longPressTimer = setTimeout(() => {
-                    isLongPress = true; // 標記為長按
-                    changeTableTime(table);
-                }, 1000); // 長按 1 秒觸發
-            };
+const startLongPress = (e) => {
+    e.preventDefault();
+    isLongPress = false; // Reset flag at start of interaction
+    longPressTimer = setTimeout(() => {
+        isLongPress = true;
+        changeTableTime(table);
+    }, 1000);
+};
 
-            const cancelLongPress = () => {
-                clearTimeout(longPressTimer); // 清除計時器
-            };
+const cancelLongPress = (e) => {
+    clearTimeout(longPressTimer);
+    // Don't reset isLongPress here - let click handler use it
+};
 
-            // 桌面端事件
-            tableDiv.addEventListener('mousedown', startLongPress);
-            tableDiv.addEventListener('mouseup', cancelLongPress);
-            tableDiv.addEventListener('mouseleave', cancelLongPress);
+// Desktop events
+tableDiv.addEventListener('mousedown', startLongPress);
+tableDiv.addEventListener('mouseup', cancelLongPress);
+tableDiv.addEventListener('mouseleave', cancelLongPress);
 
-            // 手機端事件
-            tableDiv.addEventListener('touchstart', startLongPress);
-            tableDiv.addEventListener('touchend', cancelLongPress);
-            tableDiv.addEventListener('touchcancel', cancelLongPress);
+// Mobile events
+tableDiv.addEventListener('touchstart', startLongPress);
+tableDiv.addEventListener('touchend', cancelLongPress);
+tableDiv.addEventListener('touchcancel', cancelLongPress);
 
-            // 阻止手機端長按的默認行為
-            tableDiv.addEventListener('contextmenu', (e) => {
-                e.preventDefault(); // 阻止默認的上下文選單
-            });
-
-            // 點擊事件
-            tableDiv.addEventListener('click', (e) => {
-                if (!isLongPress) { // 如果不是長按，則觸發點擊事件
-                    toggleTable(table);
-                }
-                isLongPress = false; // 重置標記
-            });
-        }
+// Click event
+tableDiv.addEventListener('click', (e) => {
+    if (!isLongPress) {
+        toggleTable(table);
+    }
+    // Reset flag after click event processed
+    isLongPress = false;
+});
 
         // 如果是訂位狀態，顯示當前活動的預訂信息
         if (status === "reserved" && tableStatus[table]?.reservedTime) {
