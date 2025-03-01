@@ -998,32 +998,112 @@ window.addEventListener('load', function() {
 
 // 長按事件處理函數
 function changeTime(table) {
-    // 提示用戶輸入 4 位數字
-    const newTime = prompt("請輸入新的入座時間（4 位數字，例如 0930 表示 09:30）：");
+    // 創建自定義彈出框
+    const overlay = document.createElement("div");
+    overlay.style.position = "fixed";
+    overlay.style.top = "0";
+    overlay.style.left = "0";
+    overlay.style.width = "100%";
+    overlay.style.height = "100%";
+    overlay.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+    overlay.style.display = "flex";
+    overlay.style.justifyContent = "center";
+    overlay.style.alignItems = "center";
+    overlay.style.zIndex = "1000";
 
-    // 檢查輸入是否為 4 位數字
-    if (newTime && /^\d{4}$/.test(newTime)) {
-        const hours = parseInt(newTime.slice(0, 2), 10);
-        const minutes = parseInt(newTime.slice(2, 4), 10);
+    const popup = document.createElement("div");
+    popup.style.backgroundColor = "#fff";
+    popup.style.padding = "20px";
+    popup.style.borderRadius = "10px";
+    popup.style.boxShadow = "0 0 10px rgba(0, 0, 0, 0.1)";
+    popup.style.width = "90%"; // 設置彈出框寬度
+    popup.style.maxWidth = "280px"; // 設置最大寬度，避免在大屏幕上過寬
 
-        // 檢查小時和分鐘是否有效
-        if (hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
-            const newStartTime = new Date();
-            newStartTime.setHours(hours, minutes, 0, 0);
+    const input = document.createElement("input");
+    input.type = "text";
+    input.inputMode = "numeric"; // 強制彈出數字鍵盤
+    input.placeholder = "輸入 4 位數字（11:30=1130）";
+    input.style.width = "100%"; // 輸入框寬度為彈出框的 100%
+    input.style.padding = "10px";
+    input.style.fontSize = "16px";
+    input.style.marginBottom = "10px";
+    input.style.boxSizing = "border-box"; // 確保 padding 和 border 不影響總寬度
+   // 設置 placeholder 顏色
+input.style.setProperty("--placeholder-color", "#999999"); // 定義 CSS 變量
+input.style.setProperty("--placeholder-opacity", "1"); // 定義透明度
+input.addEventListener("input", () => {
+    input.style.setProperty("--placeholder-color", input.value ? "transparent" : "#999999");
+});
 
-            // 更新 tableStatus 中的時間
-            tableStatus[table].startTime = newStartTime;
-
-            // 重新渲染表格
-            renderTables();
-        } else {
-            alert("輸入時間無效！請輸入有效的 4 位數字（例如 0930 表示 09:30）。");
-        }
-    } else if (newTime !== null) {
-        // 如果用戶輸入的不是 4 位數字，且不是取消操作
-        alert("輸入格式錯誤！請輸入 4 位數字（例如 0930 表示 09:30）。");
+// 動態設置 placeholder 顏色
+const style = document.createElement("style");
+style.textContent = `
+    input::placeholder {
+        color: var(--placeholder-color, #999999);
+        opacity: var(--placeholder-opacity, 1);
     }
+`;
+document.head.appendChild(style);
+
+    const button = document.createElement("button");
+    button.textContent = "確認";
+    button.style.padding = "10px 20px";
+    button.style.fontSize = "16px";
+    button.style.backgroundColor = "#000000";
+    button.style.color = "#fff";
+    button.style.border = "none";
+    button.style.borderRadius = "5px";
+    button.style.cursor = "pointer";
+
+    // 確認按鈕點擊事件
+    button.onclick = () => {
+        const newTime = input.value;
+
+        // 檢查輸入是否為 4 位數字
+        if (newTime && /^\d{4}$/.test(newTime)) {
+            const hours = parseInt(newTime.slice(0, 2), 10);
+            const minutes = parseInt(newTime.slice(2, 4), 10);
+
+            // 檢查小時和分鐘是否有效
+            if (hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
+                const newStartTime = new Date();
+                newStartTime.setHours(hours, minutes, 0, 0);
+
+                // 更新 tableStatus 中的時間
+                tableStatus[table].startTime = newStartTime;
+
+                // 重新渲染表格
+                renderTables();
+            } else {
+                alert("輸入時間無效！請輸入有效的 4 位數字（例如 0930 表示 09:30）。");
+            }
+        } else {
+            alert("輸入格式錯誤！請輸入 4 位數字（例如 0930 表示 09:30）。");
+        }
+
+        // 關閉彈出框
+        document.body.removeChild(overlay);
+    };
+
+    // 點擊空白處關閉彈出框
+    overlay.onclick = (e) => {
+        if (e.target === overlay) { // 確保點擊的是 overlay 而不是 popup
+            document.body.removeChild(overlay);
+        }
+    };
+
+    // 將元素添加到彈出框中
+    popup.appendChild(input);
+    popup.appendChild(button);
+    overlay.appendChild(popup);
+
+    // 將彈出框添加到頁面中
+    document.body.appendChild(overlay);
+
+    // 自動聚焦到輸入框
+    input.focus();
 }
+
 
         function toggleTable(table) {
             const tableState = tableStatus[table];
