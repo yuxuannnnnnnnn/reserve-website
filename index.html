@@ -162,6 +162,23 @@ body {
             color: #000000; /* 調整顏色 */
    
         }
+        .waiting-guest-info {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+
+        .waiting-guest-info .guest-id-corner {
+            background-color: #C6C6C6; 
+            color: #535353; 
+        
+        }
+
+        .waiting-guest-info .guest-details {
+            color: #000000; /* 深藍色文字 */
+        }
 
         .waitlist-item {
             position: relative; /* 讓子元素可以絕對定位 */
@@ -180,7 +197,7 @@ body {
             box-sizing: border-box;
         }
         .button-container {
-            display: flex;
+             display: flex;
             gap: 8px;
             flex-wrap: wrap;
             justify-content: center;
@@ -1379,7 +1396,15 @@ function renderReservedList() {
 
         const li = document.createElement("li");
         li.className = "waitlist-item";
-        li.innerHTML = `候${guest.id} - ${guest.count}位 - ${guest.title} ${guest.name} - ${guest.phone}`;
+        li.innerHTML = `
+    <span class="guest-info waiting-guest-info">
+        <span class="guest-id-corner">候${guest.id}</span>
+        <span class="guest-details">
+            ${guest.count}位 - ${guest.name} ${guest.title} - ${guest.phone}-
+            ${guest.assignedTable ? `<span class="assigned-table">A${guest.assignedTable}</span>` : ''}
+        </span>
+    </span>
+`;
 
         const buttonContainer = document.createElement("div");
         buttonContainer.className = "button-container";
@@ -1393,11 +1418,12 @@ function renderReservedList() {
                 button.onclick = () => assignWaitingTable(table, index);
                 buttonContainer.appendChild(button);
             });
+
         } else {
-            li.innerHTML += ` - A${guest.assignedTable}`;
+            
             const confirmButton = document.createElement("button");
             confirmButton.className = "confirm-button";
-            confirmButton.textContent = "確認入座";
+            confirmButton.textContent = `確認入座 A${guest.assignedTable}`;
             confirmButton.onclick = () => confirmWaitingSeating(guest.assignedTable, index);
             buttonContainer.appendChild(confirmButton);
         }
