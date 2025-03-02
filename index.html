@@ -103,7 +103,7 @@ body {
             flex-direction: column;
             align-items: center;
             gap: 10px;
-            margin-top: 20px;
+            margin-top: 0px;
         }
         input, button, select {
             padding: 10px;
@@ -133,8 +133,38 @@ body {
             background-color: #000000;
             color: white;
         }
+        .guest-info {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        .guest-id-corner {
+            position: absolute; /* 絕對定位 */
+            top: 0px;  
+            left: 0px;  
+            font-size: 15px; /* 調整字體大小 */
+            font-weight: 600; /* 調整字體粗度 */
+            text-align: center;
+            color: #825400; /* 調整顏色 */
+            padding: 3px 14px;
+            background-color:#EFB700; 
+            border-radius: 8px 0px 30px 0px; 
+        }
+
+        .guest-details {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            font-size: 14px; /* 調整字體大小 */
+            color: #000000; /* 調整顏色 */
+   
+        }
 
         .waitlist-item {
+            position: relative; /* 讓子元素可以絕對定位 */
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -203,7 +233,8 @@ body {
             justify-content: center;
             align-items: center;     /* 垂直置中 */
             width: 100%;            /* 佔滿父元素寬度 */
-            margin: 10px 0;         /* 上下留一些間距 */
+            margin: 10px 0 ;
+            margin-top: 0px;         /* 上下留一些間距 */
         }
 
         /* 新增的 Tab 样式 */
@@ -1099,7 +1130,9 @@ document.head.appendChild(style);
 
     // 將彈出框添加到頁面中
     document.body.appendChild(overlay);
+
 }
+  
 
         function toggleTable(table) {
             const tableState = tableStatus[table];
@@ -1285,7 +1318,12 @@ function renderReservedList() {
         
         const li = document.createElement("li");
         li.className = "waitlist-item";
-        li.innerHTML = `訂${guest.id} - ${guest.count}位 - ${guest.title} ${guest.name} - ${guest.phone} - 訂位時間 ${guest.reservedTime}`;
+       li.innerHTML = `
+    <span class="guest-info">
+        <span class="guest-id-corner">訂${guest.id}</span>
+        <span class="guest-details">${guest.count}位 - ${guest.name} ${guest.title}  - ${guest.phone} - 訂位時間 ${guest.reservedTime}</span>
+    </span>
+`;
         
         const buttonContainer = document.createElement("div");
         buttonContainer.className = "button-container";
